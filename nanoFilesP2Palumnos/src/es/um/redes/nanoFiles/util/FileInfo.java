@@ -3,6 +3,8 @@ package es.um.redes.nanoFiles.util;
 import java.io.File;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -159,6 +161,18 @@ public class FileInfo {
 		}
 		oos.flush();
 		return bos.toByteArray();
+	}
+	public static FileInfo fromInputStream(DataInputStream dis) throws IOException {
+	    String hash = dis.readUTF();
+	    String name = dis.readUTF();
+	    long size = dis.readLong();
+	    // El cuarto parámetro suele ser el path, lo ponemos a null porque el receptor no lo conoce
+	    return new FileInfo(hash, name, size, null);
+	}
+	public void toOutputStream(DataOutputStream dos) throws IOException {
+	    dos.writeUTF(this.fileHash);
+	    dos.writeUTF(this.fileName);
+	    dos.writeLong(this.fileSize);
 	}
 
 	public static FileInfo[] deserializeList(byte[] data) throws IOException {

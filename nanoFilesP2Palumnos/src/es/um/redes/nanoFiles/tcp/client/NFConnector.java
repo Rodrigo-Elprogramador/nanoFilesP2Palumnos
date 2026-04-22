@@ -17,7 +17,8 @@ public class NFConnector {
 	private Socket socket;
 	private InetSocketAddress serverAddr;
 
-
+	private DataInputStream dis;
+    private DataOutputStream dos;
 
 
 	public NFConnector(InetSocketAddress fserverAddr) throws UnknownHostException, IOException {
@@ -33,9 +34,25 @@ public class NFConnector {
 		 * enviar (dos) y recibir (dis) datos del servidor.
 		 */
 
-
+		this.socket = new Socket(fserverAddr.getAddress(), fserverAddr.getPort());
+        this.dos = new DataOutputStream(socket.getOutputStream());
+        this.dis = new DataInputStream(socket.getInputStream());
 
 	}
+	
+	
+	public FileInfo[] getPeerFileList() throws IOException {
+        // 1. Enviamos petición
+        PeerMessage request = new PeerMessage(PeerMessageOps.OPCODE_GET_FILE_LIST);
+        request.writeMessageToOutputStream(dos);
+        
+        // 2. Leemos respuesta
+        PeerMessage response = PeerMessage.readMessageFromInputStream(dis);
+        if (response.getOpcode() == PeerMessageOps.OPCODE_FILE_LIST) {
+            return response.getFileList();
+        }
+        return null;
+    }
 
 	public void test() {
 		/*
@@ -44,7 +61,30 @@ public class NFConnector {
 		 */
 	}
 
+	public boolean downloadFile(String hash, String localPath) throws IOException {
+	    // 1. Pedir fichero
+	    PeerMessage request = new PeerMessage(PeerMessageOps.OPCODE_DOWNLOAD_FILE);
+	    request.setFileHash(hash);
+	    request.writeMessageToOutputStream(dos);
 
+	    // 2. Esperar respuesta
+	    PeerMessage response = PeerMessage.readMessageFromInputStream(dis);
+	    if (response.getOpcode() == PeerMessageOps.OPCODE_FILE_CHUNK) {
+	        // El servidor va a enviar el tamaño del fichero justo después del mensaje
+	        long fileSize = dis.readLong(); 
+	        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(localPath)) {
+	            byte[] buffer = new byte[8192];
+	            int bytesRead;
+	            long totalRead = 0;
+	            while (totalRead < fileSize && (bytesRead = dis.read(buffer, 0, (int)Math.min(buffer.length, fileSize - totalRead))) != -1) {
+	                fos.write(buffer, 0, bytesRead);
+	                totalRead += bytesRead;
+	            }
+	        }
+	        return true;
+	    }
+	    return false;
+	}
 
 
 

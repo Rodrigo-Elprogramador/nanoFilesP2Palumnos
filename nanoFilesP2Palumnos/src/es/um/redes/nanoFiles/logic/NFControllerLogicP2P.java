@@ -8,12 +8,13 @@ import es.um.redes.nanoFiles.application.NanoFiles;
 
 
 import es.um.redes.nanoFiles.tcp.server.NFServer;
+import es.um.redes.nanoFiles.util.FileInfo;
 
 public class NFControllerLogicP2P {
 	// Servidor TCP local para compartir ficheros con otros peers
 	private NFServer fileServer = null;
 
-
+	
 
 	protected NFControllerLogicP2P() {
 	}
@@ -34,6 +35,7 @@ public class NFControllerLogicP2P {
 		 */
 		if (fileServer != null) {
 			System.err.println("File server is already running");
+			return true;
 		} else {
 			/*
 			 * TODO: (Boletín Servidor TCP concurrente) Arrancar servidor en segundo plano
@@ -45,7 +47,30 @@ public class NFControllerLogicP2P {
 			 * programa
 			 * 
 			 */
-
+			try {
+	            // 1. Creamos la instancia del servidor (esto crea el ServerSocket)
+	            fileServer = new NFServer();
+	            
+	            // 2. Creamos un hilo para que el servidor corra en segundo plano
+	            Thread serverThread = new Thread(fileServer);
+	            
+	            // 3. Arrancamos el hilo
+	            serverThread.start();
+	            
+	            // 4. Comprobamos que el puerto es válido
+	            int port = fileServer.getPort();
+	            if (port > 0) {
+	                System.out.println("* TCP File Server running on port " + port);
+	                serverRunning = true;
+	            } else {
+	                System.err.println("Error: File server bound to an invalid port.");
+	                fileServer = null;
+	            }
+	            
+	        } catch (IOException e) {
+	            System.err.println("Cannot start the file server: " + e.getMessage());
+	            fileServer = null;
+	        }
 
 
 
@@ -53,6 +78,7 @@ public class NFControllerLogicP2P {
 		return serverRunning;
 
 	}
+	
 
 	protected void testTCPServer() {
 		assert (NanoFiles.testModeTCP);
@@ -112,8 +138,33 @@ public class NFControllerLogicP2P {
 	 */
 	protected boolean listPeerFiles(InetSocketAddress peerAddr) {
 		boolean success = false;
-
-
+		try {
+            // 1. Creamos el conector con la dirección que recibimos por parámetro
+            NFConnector connector = new NFConnector(peerAddr);
+            
+            // 2. Pedimos la lista de ficheros
+            FileInfo[] files = connector.getPeerFileList();
+            
+            // 3. Si hemos recibido algo, lo imprimimos
+            if (files != null) {
+                System.out.println("\n* Files shared by peer at " + peerAddr + ":");
+                if (files.length == 0) {
+                    System.out.println("  (this peer is not sharing any files)");
+                } else {
+                    for (FileInfo file : files) {
+                        System.out.println("  - " + file.fileName + " [" + file.fileSize + " bytes] (Hash: " + file.fileHash + ")");
+                    }
+                }
+                success = true;
+            } else {
+                System.err.println("✗ Error: Received null file list from peer.");
+            }
+            
+            // Nota: El conector debería cerrarse si has implementado un método close()
+            
+        } catch (IOException e) {
+            System.err.println("✗ Error connecting to peer to get file list: " + e.getMessage());
+        }
 
 		return success;
 	}
@@ -124,14 +175,37 @@ public class NFControllerLogicP2P {
 	 * peers que tienen el hash.
 	 */
 	protected boolean downloadFromPeers(NFControllerLogicDir dirLogic, String targetPeerNickname,
-			String targetHashSubstring) {
-		// TODO: localizar peers con el hash solicitado (o uno concreto) y delegar en
-		// downloadFileFromServers
-		boolean success = false;
+	        String targetHashSubstring) {
+	    
+	    // 1. Obtener el mapa de todos los peers del directorio
+	    java.util.Map<String, InetSocketAddress> peers = dirLogic.fetchPeerList();
+	    
+	    // 2. Buscamos la dirección del peer que nos han pedido
+	    InetSocketAddress peerAddr = peers.get(targetPeerNickname);
 
+	    if (peerAddr == null) {
+	        System.err.println("✗ Peer not found in directory: " + targetPeerNickname);
+	        return false;
+	    }
 
+	    try {
+	        // 3. Creamos el conector TCP hacia ese peer
+	        NFConnector connector = new NFConnector(peerAddr);
+	        
+	        // 4. USAMOS EL ATRIBUTO PÚBLICO DE NANOFILES:
+	        String folder = NanoFiles.sharedDirname; 
+	        String localPath = folder + "/download_" + targetHashSubstring.substring(0, 5);
 
-		return success;
+	        if (connector.downloadFile(targetHashSubstring, localPath)) {
+	            System.out.println("✓ File downloaded successfully to: " + localPath);
+	            return true;
+	        } else {
+	            System.err.println("✗ Peer " + targetPeerNickname + " does not have the requested file.");
+	        }
+	    } catch (IOException e) {
+	        System.err.println("✗ Connection error with peer " + targetPeerNickname + ": " + e.getMessage());
+	    }
+	    return false;
 	}
 
 	/**
@@ -173,14 +247,14 @@ public class NFControllerLogicP2P {
 	 * @return El puerto en el que escucha el servidor, o 0 en caso de error.
 	 */
 	protected int getServerPort() {
-		int port = 0;
+		
 		/*
 		 * TODO: Devolver el puerto de escucha de nuestro servidor de ficheros
 		 */
-
-
-
-		return port;
+		if (fileServer != null) {
+	        return fileServer.getPort();
+	    }
+	    return 0;
 	}
 
 	/**
@@ -191,17 +265,17 @@ public class NFControllerLogicP2P {
 		/*
 		 * TODO: Enviar señal para detener nuestro servidor de ficheros en segundo plano
 		 */
-
+		if (fileServer != null) {
+	        fileServer.stopServer();
+	        fileServer = null;
+	        System.out.println("* TCP File Server stopped.");
+	    }
 
 
 	}
 
 	protected boolean serving() {
-		boolean result = false;
-
-
-
-		return result;
+		return (fileServer != null);
 
 	}
 

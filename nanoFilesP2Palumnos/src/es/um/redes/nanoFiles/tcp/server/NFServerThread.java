@@ -10,7 +10,19 @@ public class NFServerThread extends Thread {
 	 * (un socket distinto para "conversar" con un cliente)
 	 */
 
+	private Socket socket;
+    private NFServer server;
 
+    public NFServerThread(NFServer server, Socket socket) {
+        this.server = server;
+        this.socket = socket;
+    }
+
+    @Override
+    public void run() {
+        // Invocamos al método que gestiona la comunicación con este cliente específico
+        server.serveFilesToClient(socket);
+    }
 
 
 }

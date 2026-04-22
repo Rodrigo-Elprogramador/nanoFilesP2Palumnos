@@ -1,8 +1,14 @@
 package es.um.redes.nanoFiles.tcp.server;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+
+import es.um.redes.nanoFiles.tcp.message.PeerMessage;
+import es.um.redes.nanoFiles.tcp.message.PeerMessageOps;
+import es.um.redes.nanoFiles.util.FileInfo;
 
 
 
@@ -11,9 +17,11 @@ public class NFServer implements Runnable {
 
 	public static final int PORT = 10000;
 
-
+	private boolean stopServer = false; // Para poder detener el servidor
 
 	private ServerSocket serverSocket = null;
+	
+	
 
 	public NFServer() throws IOException {
 		/*
@@ -29,6 +37,12 @@ public class NFServer implements Runnable {
 	    System.out.println("* TCP File Server initialized on port " + PORT);
 
 
+	}
+	public int getPort() {
+	    if (serverSocket != null && serverSocket.isBound()) {
+	        return serverSocket.getLocalPort();
+	    }
+	    return -1;
 	}
 
 	/**
@@ -101,7 +115,31 @@ public class NFServer implements Runnable {
 		 * más de un cliente conectado a este servidor.
 		 */
 
+		if (serverSocket == null || !serverSocket.isBound()) {
+            return;
+        }
 
+        while (!stopServer) {
+            try {
+                // 1. Esperamos una nueva conexión de un cliente (bloqueante)
+                Socket clientSocket = serverSocket.accept();
+                System.out.println("* New client connected from " + clientSocket.getInetAddress());
+
+                /*
+                 * TODO: (Boletín TCPConcurrente)
+                 * En lugar de llamar a serveFilesToClient(clientSocket) directamente,
+                 * creamos un hilo nuevo para este cliente específico.
+                 */
+                NFServerThread thread = new NFServerThread(this, clientSocket);
+                thread.start(); // Esto lanza el run() de NFServerThread y libera este bucle
+
+            } catch (IOException e) {
+                if (!stopServer) {
+                    System.err.println("Error accepting connection: " + e.getMessage());
+                }
+            }
+        }
+        System.out.println("NFServer stopped.");
 
 
 	}
@@ -111,7 +149,24 @@ public class NFServer implements Runnable {
 	 * servidor (stopserver) 3) Obtener el puerto de escucha del servidor etc.
 	 */
 
-
+	/**
+     * Método para detener el servidor de ficheros.
+     * Cierra el socket para desbloquear el hilo que está en accept().
+     */
+    public void stopServer() {
+        this.stopServer = true; // Marcamos el flag para que el bucle while(!stopServer) termine
+        try {
+            if (serverSocket != null && !serverSocket.isClosed()) {
+                /* * IMPORTANTE: Al cerrar el socket, el método accept() que está 
+                 * esperando lanzará una IOException, lo cual es normal y 
+                 * hará que el hilo termine.
+                 */
+                serverSocket.close(); 
+            }
+        } catch (IOException e) {
+            System.err.println("Error while closing NFServer socket: " + e.getMessage());
+        }
+    }
 
 
 	/**
@@ -142,11 +197,58 @@ public class NFServer implements Runnable {
 		 * de su hash completo.
 		 */
 
-
+		try (DataInputStream dis = new DataInputStream(socket.getInputStream());
+		         DataOutputStream dos = new DataOutputStream(socket.getOutputStream())) {
+		        
+		        while (true) {
+		            try {
+		                PeerMessage msg = PeerMessage.readMessageFromInputStream(dis);
+		                
+		                if (msg.getOpcode() == PeerMessageOps.OPCODE_GET_FILE_LIST) {
+		                    FileInfo[] myFiles = es.um.redes.nanoFiles.application.NanoFiles.db.getFiles();
+		                    PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_FILE_LIST);
+		                    response.setFileList(myFiles);
+		                    response.writeMessageToOutputStream(dos);
+		                } 
+		                else if (msg.getOpcode() == PeerMessageOps.OPCODE_DOWNLOAD_FILE) {
+		                    // 1. Obtener el hash que nos pide el cliente
+		                    String hash = msg.getFileHash();
+		                    // 2. Buscar la ruta del fichero en nuestra base de datos local
+		                    String filePath = es.um.redes.nanoFiles.application.NanoFiles.db.lookupFilePath(hash);
+		                    
+		                    if (filePath != null) {
+		                        java.io.File file = new java.io.File(filePath);
+		                        // 3. Confirmar al cliente que el fichero existe enviando FILE_CHUNK
+		                        PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_FILE_CHUNK);
+		                        response.setFileName(file.getName()); // El nombre real del archivo
+		                        response.writeMessageToOutputStream(dos);
+		                        
+		                        // 4. Enviar el tamaño (long) para que el cliente sepa cuánto leer
+		                        dos.writeLong(file.length());
+		                        
+		                        // 5. Enviar el contenido del fichero en bloques
+		                        try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
+		                            byte[] buffer = new byte[8192];
+		                            int bytesRead;
+		                            while ((bytesRead = fis.read(buffer)) != -1) {
+		                                dos.write(buffer, 0, bytesRead);
+		                            }
+		                            dos.flush(); // Asegurar que todo se envía
+		                        }
+		                    } else {
+		                        // Si no lo encontramos, enviamos error
+		                        PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_FILE_NOT_FOUND);
+		                        response.writeMessageToOutputStream(dos);
+		                    }
+		                }
+		                
+		            } catch (java.io.EOFException e) {
+		                break; 
+		            }
+		        }
+		    } catch (IOException e) {
+		        System.err.println("Error serving client: " + e.getMessage());
+		    }
 
 	}
-
-
-
-
 }

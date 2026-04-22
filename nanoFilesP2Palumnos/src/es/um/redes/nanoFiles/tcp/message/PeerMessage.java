@@ -8,9 +8,6 @@ import es.um.redes.nanoFiles.util.FileInfo;
 
 public class PeerMessage {
 
-
-
-
 	private byte opcode;
 
 	/*
@@ -19,8 +16,24 @@ public class PeerMessage {
 	 * 
 	 */
 
+	private FileInfo[] fileList; // Atributo para la lista de ficheros
+	private String fileHash; // NUEVO: Para pedir un fichero
+	private String fileName; // NUEVO: Para saber el nombre al descargar
 
+	// ... (tus constructores y getters existentes) ...
 
+	public void setFileHash(String hash) { this.fileHash = hash; }
+	public String getFileHash() { return fileHash; }
+	public void setFileName(String name) { this.fileName = name; }
+	public String getFileName() { return fileName; }
+
+	public void setFileList(FileInfo[] files) {
+		this.fileList = files;
+	}
+
+	public FileInfo[] getFileList() {
+		return fileList;
+	}
 
 	public PeerMessage() {
 		opcode = PeerMessageOps.OPCODE_INVALID_CODE;
@@ -29,6 +42,8 @@ public class PeerMessage {
 	public PeerMessage(byte op) {
 		opcode = op;
 	}
+	
+	
 
 	/*
 	 * TODO: (Boletín MensajesBinarios) Crear métodos getter y setter para obtener
@@ -39,10 +54,6 @@ public class PeerMessage {
 	public byte getOpcode() {
 		return opcode;
 	}
-
-
-
-
 
 	/**
 	 * Método de clase para parsear los campos de un mensaje y construir el objeto
@@ -62,16 +73,27 @@ public class PeerMessage {
 		 * Usar dis.readFully para leer un array de bytes, dis.readInt para leer un
 		 * entero, etc.
 		 */
-		PeerMessage message = new PeerMessage();
 		byte opcode = dis.readByte();
+		PeerMessage message = new PeerMessage(opcode);
 		switch (opcode) {
-
-
-
-		default:
-			System.err.println("PeerMessage.readMessageFromInputStream doesn't know how to parse this message opcode: "
-					+ PeerMessageOps.opcodeToOperation(opcode));
-			System.exit(-1);
+			case PeerMessageOps.OPCODE_GET_FILE_LIST:
+				break;
+			case PeerMessageOps.OPCODE_FILE_LIST:
+				int numFiles = dis.readInt();
+				FileInfo[] files = new FileInfo[numFiles];
+				for (int i = 0; i < numFiles; i++) {
+					files[i] = FileInfo.fromInputStream(dis);
+				}
+				message.setFileList(files);
+				break;
+			case PeerMessageOps.OPCODE_DOWNLOAD_FILE: // Cliente pide hash
+				message.setFileHash(dis.readUTF());
+				break;
+			case PeerMessageOps.OPCODE_FILE_NOT_FOUND: // Servidor no lo tiene
+				break;
+			case PeerMessageOps.OPCODE_FILE_CHUNK: // Servidor envía info previa al chorro de bytes
+				message.setFileName(dis.readUTF());
+				break;
 		}
 		return message;
 	}
@@ -87,17 +109,22 @@ public class PeerMessage {
 
 		dos.writeByte(opcode);
 		switch (opcode) {
-
-
-
-
-		default:
-			System.err.println("PeerMessage.writeMessageToOutputStream found unexpected message opcode " + opcode + "("
-					+ PeerMessageOps.opcodeToOperation(opcode) + ")");
+			case PeerMessageOps.OPCODE_GET_FILE_LIST:
+				break;
+			case PeerMessageOps.OPCODE_FILE_LIST:
+				dos.writeInt(fileList.length);
+				for (FileInfo file : fileList) {
+					file.toOutputStream(dos);
+				}
+				break;
+			case PeerMessageOps.OPCODE_DOWNLOAD_FILE:
+				dos.writeUTF(fileHash);
+				break;
+			case PeerMessageOps.OPCODE_FILE_CHUNK:
+				dos.writeUTF(fileName);
+				break;
 		}
+	
 	}
-
-
-
 
 }
