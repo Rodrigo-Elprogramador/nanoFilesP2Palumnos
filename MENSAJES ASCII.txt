@@ -1,0 +1,243 @@
+================================================================================
+EJERCICIO 1: MENSAJE DE PING
+================================================================================
+
+1.1 PETICIÓN: PING
+--------------------------------------------------------------------------------
+ENVÍA: Cliente
+RECIBE: Directorio
+FUNCIÓN: Comprobar que el directorio está activo y es compatible
+CUÁNDO: Al inicio, antes de cualquier operación
+
+FORMATO:
+operation:ping
+protocolId:123456789A
+
+
+EJEMPLO:
+operation:ping
+protocolId:123456789A
+
+
+================================================================================
+
+1.2 RESPUESTA EXITOSA: PING_OK
+--------------------------------------------------------------------------------
+ENVÍA: Directorio
+RECIBE: Cliente
+FUNCIÓN: Confirmar compatibilidad
+CUÁNDO: Cuando el protocolId coincide
+
+FORMATO:
+operation:pingOk
+
+
+EJEMPLO:
+operation:pingOk
+
+
+================================================================================
+
+1.3 RESPUESTA FALLIDA: PING_BAD
+--------------------------------------------------------------------------------
+ENVÍA: Directorio
+RECIBE: Cliente
+FUNCIÓN: Notificar incompatibilidad
+CUÁNDO: Cuando el protocolId NO coincide
+
+FORMATO:
+operation:pingBad
+errorCode:1
+errorMessage:Protocol version mismatch
+
+
+EJEMPLO:
+operation:pingFailed
+errorCode:1
+errorMessage:Incompatible protocol
+
+
+================================================================================
+CÓDIGOS DE ERROR:
+1 = Protocolo incompatible
+2 = Mensaje mal formado
+3 = Error del servidor
+================================================================================
+
+================================================================================
+DISEÑO DEL PROTOCOLO - MENSAJES UDP NANOFILES
+================================================================================
+
+FORMATO GENERAL:
+- Cada mensaje tiene formato "campo:valor\n"
+- La primera línea siempre es "operation:tipoOperacion\n"
+- El mensaje termina con una línea vacía "\n"
+
+================================================================================
+1. PING (Comprobar compatibilidad de protocolo)
+================================================================================
+
+CLIENTE → SERVIDOR:
+-------------------
+operation:ping
+protocolId:52021705Y
+
+
+SERVIDOR → CLIENTE (Compatible):
+---------------------------------
+operation:pingOk
+
+
+SERVIDOR → CLIENTE (Incompatible):
+-----------------------------------
+operation:pingBad
+errorCode:1
+errorMessage:Incompatible protocol. Expected XXX but received YYY
+
+
+================================================================================
+2. DIRFILES (Obtener lista de ficheros del directorio)
+================================================================================
+
+CLIENTE → SERVIDOR:
+-------------------
+operation:fileList
+
+
+SERVIDOR → CLIENTE (Éxito):
+----------------------------
+operation:fileListOk
+fileList:hash1&nombre1.txt&12345,hash2&nombre2.pdf&67890,hash3&file3.jpg&54321
+
+
+Formato del campo fileList:
+- Cada fichero: hash&nombre&tamaño
+- Separados por comas: fichero1,fichero2,fichero3
+- Si no hay ficheros, fileList está vacío o ausente
+
+
+SERVIDOR → CLIENTE (Error):
+----------------------------
+operation:fileListBad
+errorCode:3
+errorMessage:No files available
+
+
+================================================================================
+3. SERVE (Registrar peer como servidor de ficheros)
+================================================================================
+
+CLIENTE → SERVIDOR:
+-------------------
+operation:register
+nickname:MiNickname
+port:8080
+
+
+SERVIDOR → CLIENTE (Éxito):
+----------------------------
+operation:registerOk
+
+
+SERVIDOR → CLIENTE (Nickname ocupado):
+---------------------------------------
+operation:registerBad
+errorCode:2
+errorMessage:Nickname already in use
+
+
+SERVIDOR → CLIENTE (Otro error):
+---------------------------------
+operation:registerBad
+errorCode:4
+errorMessage:Invalid port number
+
+
+================================================================================
+4. PEERS (Obtener lista de peers registrados)
+================================================================================
+
+CLIENTE → SERVIDOR:
+-------------------
+operation:peerList
+
+
+SERVIDOR → CLIENTE (Éxito):
+----------------------------
+operation:peerListOk
+peerList:Nick1&192.168.1.10:8080,Nick2&192.168.1.20:8081,Nick3&10.0.0.5:9000
+
+
+Formato del campo peerList:
+- Cada peer: nickname&IP:puerto
+- Separados por comas: peer1,peer2,peer3
+- Si no hay peers, peerList está vacío o ausente
+
+
+SERVIDOR → CLIENTE (Error):
+----------------------------
+operation:peerListBad
+errorCode:5
+errorMessage:No peers registered
+
+
+================================================================================
+RESUMEN DE OPERACIONES
+================================================================================
+
+OPERACIONES CLIENTE → SERVIDOR:
+- ping          : Comprobar compatibilidad
+- fileList      : Solicitar lista de ficheros
+- register      : Registrarse como servidor
+- peerList      : Solicitar lista de peers
+
+OPERACIONES SERVIDOR → CLIENTE:
+- pingOk        : Protocolo compatible
+- pingBad       : Protocolo incompatible
+- fileListOk    : Lista de ficheros
+- fileListBad   : Error al obtener ficheros
+- registerOk    : Registro exitoso
+- registerBad   : Error en registro (nickname ocupado, etc.)
+- peerListOk    : Lista de peers
+- peerListBad   : Error al obtener peers
+
+
+================================================================================
+CAMPOS UTILIZADOS
+================================================================================
+
+- operation       : Tipo de operación (siempre presente)
+- protocolId      : Identificador de protocolo (solo en ping)
+- errorCode       : Código de error (solo en mensajes *Bad)
+- errorMessage    : Descripción del error (solo en mensajes *Bad)
+- fileList        : Lista de ficheros (formato: hash&nombre&tamaño,...)
+- nickname        : Nickname del peer (solo en register)
+- port            : Puerto TCP del servidor (solo en register)
+- peerList        : Lista de peers (formato: nick&IP:puerto,...)
+
+
+================================================================================
+CÓDIGOS DE ERROR
+================================================================================
+
+1 : Protocolo incompatible
+2 : Nickname ya en uso
+3 : No hay ficheros disponibles
+4 : Puerto inválido
+5 : No hay peers registrados
+
+
+================================================================================
+NOTAS IMPORTANTES
+================================================================================
+
+1. Todos los nombres de campo se convierten a MINÚSCULAS al parsear
+2. El delimitador entre campo y valor es ':'
+3. Cada línea termina con '\n'
+4. El mensaje completo termina con '\n\n' (línea vacía)
+5. En las listas (fileList, peerList):
+   - Los elementos se separan con ','
+   - Los campos de cada elemento se separan con '&'
+   - IP:puerto se mantiene junto (sin separar con &)
+
+================================================================================
