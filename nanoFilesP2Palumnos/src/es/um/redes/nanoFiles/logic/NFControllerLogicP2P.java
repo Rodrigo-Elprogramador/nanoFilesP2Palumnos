@@ -192,12 +192,20 @@ public class NFControllerLogicP2P {
 	        // 3. Creamos el conector TCP hacia ese peer
 	        NFConnector connector = new NFConnector(peerAddr);
 	        
-	        // 4. USAMOS EL ATRIBUTO PÚBLICO DE NANOFILES:
+	        // 4. Descarga en una ubicación temporal con un nombre único
 	        String folder = NanoFiles.sharedDirname; 
-	        String localPath = folder + "/download_" + targetHashSubstring.substring(0, 5);
+	        String tempPath = folder + "/download_" + targetHashSubstring.substring(0, 5);
 
-	        if (connector.downloadFile(targetHashSubstring, localPath)) {
-	            System.out.println("✓ File downloaded successfully to: " + localPath);
+	        // 5. downloadFile() ahora devuelve el nombre del archivo
+	        String remoteFileName = connector.downloadFile(targetHashSubstring, tempPath);
+	        
+	        if (remoteFileName != null) {
+	            // 6. Renombra el archivo al nombre real preservando la extensión
+	            java.nio.file.Path tempFile = java.nio.file.Paths.get(tempPath);
+	            java.nio.file.Path finalPath = java.nio.file.Paths.get(folder, remoteFileName);
+	            java.nio.file.Files.move(tempFile, finalPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+	            
+	            System.out.println("✓ File downloaded successfully to: " + finalPath);
 	            return true;
 	        } else {
 	            System.err.println("✗ Peer " + targetPeerNickname + " does not have the requested file.");

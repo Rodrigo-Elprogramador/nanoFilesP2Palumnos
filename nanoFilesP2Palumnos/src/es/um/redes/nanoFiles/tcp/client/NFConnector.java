@@ -61,7 +61,7 @@ public class NFConnector {
 		 */
 	}
 
-	public boolean downloadFile(String hash, String localPath) throws IOException {
+	public String downloadFile(String hash, String localPath) throws IOException {
 	    // 1. Pedir fichero
 	    PeerMessage request = new PeerMessage(PeerMessageOps.OPCODE_DOWNLOAD_FILE);
 	    request.setFileHash(hash);
@@ -70,6 +70,9 @@ public class NFConnector {
 	    // 2. Esperar respuesta
 	    PeerMessage response = PeerMessage.readMessageFromInputStream(dis);
 	    if (response.getOpcode() == PeerMessageOps.OPCODE_FILE_CHUNK) {
+	        // AQUÍ ESTÁ EL NOMBRE REAL DEL ARCHIVO
+	        String remoteFileName = response.getFileName();
+	        
 	        // El servidor va a enviar el tamaño del fichero justo después del mensaje
 	        long fileSize = dis.readLong(); 
 	        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(localPath)) {
@@ -81,9 +84,10 @@ public class NFConnector {
 	                totalRead += bytesRead;
 	            }
 	        }
-	        return true;
+	        // DEVUELVE EL NOMBRE DEL ARCHIVO DESCARGADO
+	        return remoteFileName;
 	    }
-	    return false;
+	    return null;
 	}
 
 
