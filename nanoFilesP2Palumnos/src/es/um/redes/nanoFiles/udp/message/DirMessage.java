@@ -35,7 +35,15 @@ public class DirMessage {
 	private static final String FIELDNAME_NICKNAME = "nickname";
 	private static final String FIELDNAME_PORT = "port";
 	private static final String FIELDNAME_PEERLIST = "peerlist";
-
+	
+	//EXTRA 
+	private static final String FIELDNAME_SEQNUM         = "seqnum";
+	private static final String FIELDNAME_NUMCHUNKS       = "numchunks";
+	private static final String FIELDNAME_HASH_SUBSTRING  = "hashsubstring";
+	private static final String FIELDNAME_FILENAME        = "filename";
+	private static final String FIELDNAME_FILESIZE        = "filesize";
+	private static final String FIELDNAME_FILEHASH        = "filehash";
+	private static final String FIELDNAME_FILEDATA        = "filedata";
 
 
 	/**
@@ -58,7 +66,15 @@ public class DirMessage {
 	private String nickname;
 	private int port;
 	private String peerList;
-
+	
+	//EXTRAS
+	private int    seqnum    = 0;
+	private int    numchunks = 1;
+	private String hashSubstring;
+	private String fileName2;   //
+	private long   fileSize2;
+	private String fileHash2;
+	private String fileData;    // datos del fichero en Base64
 
 
 
@@ -289,6 +305,41 @@ public class DirMessage {
 				m.peerList = value;
 				break;
 			}
+			//EXTRAS
+			case FIELDNAME_SEQNUM:
+			    assert (m != null);
+			    m.seqnum = Integer.parseInt(value);
+			    break;
+
+			case FIELDNAME_NUMCHUNKS:
+			    assert (m != null);
+			    m.numchunks = Integer.parseInt(value);
+			    break;
+
+			case FIELDNAME_HASH_SUBSTRING:
+			    assert (m != null);
+			    m.hashSubstring = value;
+			    break;
+
+			case FIELDNAME_FILENAME:
+			    assert (m != null);
+			    m.fileName2 = value;
+			    break;
+
+			case FIELDNAME_FILESIZE:
+			    assert (m != null);
+			    m.fileSize2 = Long.parseLong(value);
+			    break;
+
+			case FIELDNAME_FILEHASH:
+			    assert (m != null);
+			    m.fileHash2 = value;
+			    break;
+
+			case FIELDNAME_FILEDATA:
+			    assert (m != null);
+			    m.fileData = value;
+			    break;
 
 
 
@@ -339,6 +390,9 @@ public class DirMessage {
 			// No hay campos adicionales
 			break;
 		case DirMessageOps.OPERATION_FILELIST_OK:
+			//EXTRA AÑADIMOS seqnum y numchunks 
+		    sb.append(FIELDNAME_SEQNUM    + DELIMITER + seqnum    + END_LINE);
+		    sb.append(FIELDNAME_NUMCHUNKS + DELIMITER + numchunks + END_LINE);
 			if (fileList != null && !fileList.isEmpty()) {
 				sb.append(FIELDNAME_FILELIST + DELIMITER + fileList + END_LINE);
 			}
@@ -370,6 +424,26 @@ public class DirMessage {
 			sb.append(FIELDNAME_ERROR_CODE + DELIMITER + errorCode + END_LINE);
 			sb.append(FIELDNAME_ERROR_MESSAGE + DELIMITER + errorMessage + END_LINE);
 			break;
+		//EXTRAS
+				case DirMessageOps.OPERATION_FILELIST_NEXT:   
+		    sb.append(FIELDNAME_SEQNUM + DELIMITER + seqnum + END_LINE);
+		    break;
+
+		case DirMessageOps.OPERATION_DIRDL:           
+		    sb.append(FIELDNAME_HASH_SUBSTRING + DELIMITER + hashSubstring + END_LINE);
+		    break;
+
+		case DirMessageOps.OPERATION_DIRDL_OK:       
+		    sb.append(FIELDNAME_FILENAME + DELIMITER + fileName2 + END_LINE);
+		    sb.append(FIELDNAME_FILESIZE + DELIMITER + fileSize2 + END_LINE);
+		    sb.append(FIELDNAME_FILEHASH + DELIMITER + fileHash2 + END_LINE);
+		    sb.append(FIELDNAME_FILEDATA + DELIMITER + fileData  + END_LINE);
+		    break;
+
+		case DirMessageOps.OPERATION_DIRDL_BAD:       
+		    sb.append(FIELDNAME_ERROR_CODE    + DELIMITER + errorCode    + END_LINE);
+		    sb.append(FIELDNAME_ERROR_MESSAGE + DELIMITER + errorMessage + END_LINE);
+		    break;
 		
 		}
 		
@@ -379,6 +453,35 @@ public class DirMessage {
 		sb.append(END_LINE); // Marcamos el final del mensaje
 		return sb.toString();
 	}
+	
+	//EXTRAS
+	//seqnum / numchunks
+	public void setSeqnum(int s)    { this.seqnum = s; }
+	public int  getSeqnum()         { return seqnum; }
+	public void setNumchunks(int n) { this.numchunks = n; }
+	public int  getNumchunks()      { return numchunks; }
+
+	// ── hashSubstring (para dirDl) 
+	public void setHashSubstring(String hs) {
+	    if (!operation.equals(DirMessageOps.OPERATION_DIRDL))
+	        throw new RuntimeException("setHashSubstring: tipo incorrecto: " + operation);
+	    hashSubstring = hs;
+	}
+	public String getHashSubstring() {
+	    if (!operation.equals(DirMessageOps.OPERATION_DIRDL))
+	        throw new RuntimeException("getHashSubstring: tipo incorrecto: " + operation);
+	    return hashSubstring;
+	}
+
+	// campos de respuesta dirDlOk 
+	public void setDirDlFilename(String name) { this.fileName2 = name; }
+	public String getDirDlFilename()          { return fileName2; }
+	public void setDirDlFilesize(long size)   { this.fileSize2 = size; }
+	public long getDirDlFilesize()            { return fileSize2; }
+	public void setDirDlFilehash(String hash) { this.fileHash2 = hash; }
+	public String getDirDlFilehash()          { return fileHash2; }
+	public void setFileData(String data)      { this.fileData = data; }
+	public String getFileData()               { return fileData; }
 	
 	//comando ping 
 	public byte[] toByteArray() {

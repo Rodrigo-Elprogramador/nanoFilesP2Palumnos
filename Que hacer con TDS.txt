@@ -1,0 +1,14 @@
+public void handlerLogin(ActionEvent event){ tengo que separarlo hacer un controlador de vista y un controlador general o de dominio.
+
+el de la vista controla las ventanas, y el controlador de modelo el que tiene que hacer las comprobaciones. que tiene que hacer que el usuario existe etc
+
+el mas sencillo de hacer el controlador de vista , el que gestiona la UI interfaz de usuario.
+
+crearVentanaerror() se usa para to, ya que es el mensaje de error
+
+leerse el modelo de dominio y en funciones del boletin.
+
+
+futuras subidas: git add .
+git commit -m "Segundo ajuste: corrige X"
+git push

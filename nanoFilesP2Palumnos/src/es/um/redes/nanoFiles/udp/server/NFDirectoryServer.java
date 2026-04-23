@@ -339,30 +339,17 @@ public class NFDirectoryServer {
 			break;
 		}
 		
-		//EJE 7 ASCII **MODIFICADO el case PARA DIRFILES**
+		//EJE 7 ASCII **MODIFICADO el case PARA DIRFILES** y OTRA VEZ MODIFICADO PARA EXTRA DIRFILES
 		
 		case DirMessageOps.OPERATION_FILELIST: {
-			System.out.println("→ Processing FILELIST request");
-
-			// Siempre responder OK; lista puede venir vacía
-			msgToSend = new DirMessage(DirMessageOps.OPERATION_FILELIST_OK);
-
-			StringBuilder fileListBuilder = new StringBuilder();
-			if (directoryFiles != null && directoryFiles.length > 0) {
-				for (int i = 0; i < directoryFiles.length; i++) {
-					FileInfo file = directoryFiles[i];
-					fileListBuilder.append(file.fileHash).append("&")
-							.append(file.fileName).append("&")
-							.append(file.fileSize);
-					if (i < directoryFiles.length - 1) {
-						fileListBuilder.append(",");
-					}
-				}
-			}
-
-			msgToSend.setFileList(fileListBuilder.toString());
-			System.out.println("✓ Sending " + (directoryFiles == null ? 0 : directoryFiles.length) + " files");
-			break;
+		    System.out.println("→ Processing FILELIST request (chunk 0)");
+		    String[] chunks = buildFileListChunks();
+		    msgToSend = new DirMessage(DirMessageOps.OPERATION_FILELIST_OK);
+		    msgToSend.setSeqnum(0);
+		    msgToSend.setNumchunks(chunks.length);
+		    msgToSend.setFileList(chunks[0]);
+		    System.out.println("✓ Sending chunk 0/" + chunks.length + " (" + chunks[0].length() + " bytes)");
+		    break;
 		}
 		
 		//EJE 7 ASCII
@@ -449,6 +436,77 @@ public class NFDirectoryServer {
 			break;
 		}
 		
+		//EXTRA DIRFILES
+		case DirMessageOps.OPERATION_FILELIST_NEXT: {
+		    int requestedSeq = messageFromClient.getSeqnum();
+		    System.out.println("→ Processing FILELIST_NEXT request, chunk " + requestedSeq);
+		    String[] chunks = buildFileListChunks();
+		    if (requestedSeq < 0 || requestedSeq >= chunks.length) {
+		        msgToSend = new DirMessage(DirMessageOps.OPERATION_FILELIST_BAD);
+		        msgToSend.setErrorCode("6");
+		        msgToSend.setErrorMessage("Invalid chunk seqnum: " + requestedSeq);
+		    } else {
+		        msgToSend = new DirMessage(DirMessageOps.OPERATION_FILELIST_OK);
+		        msgToSend.setSeqnum(requestedSeq);
+		        msgToSend.setNumchunks(chunks.length);
+		        msgToSend.setFileList(chunks[requestedSeq]);
+		        System.out.println("✓ Sending chunk " + requestedSeq + "/" + chunks.length);
+		    }
+		    break;
+		}
+		//EXTRA DIRDL
+		case DirMessageOps.OPERATION_DIRDL: {
+		    String sub = messageFromClient.getHashSubstring();
+		    System.out.println("→ Processing DIRDL request, hash substring: " + sub);
+
+		    // Buscar coincidencias
+		    java.util.List<FileInfo> matches = new java.util.ArrayList<>();
+		    for (FileInfo f : directoryFiles) {
+		        if (f.fileHash.contains(sub)) matches.add(f);
+		    }
+
+		    if (matches.size() == 0) {
+		        msgToSend = new DirMessage(DirMessageOps.OPERATION_DIRDL_BAD);
+		        msgToSend.setErrorCode("10");
+		        msgToSend.setErrorMessage("No file matches hash substring: " + sub);
+		        System.err.println("✗ No match for: " + sub);
+		    } else if (matches.size() > 1) {
+		        msgToSend = new DirMessage(DirMessageOps.OPERATION_DIRDL_BAD);
+		        msgToSend.setErrorCode("11");
+		        msgToSend.setErrorMessage("Ambiguous hash substring '" + sub + "' matches " + matches.size() + " files");
+		        System.err.println("✗ Ambiguous substring: " + sub);
+		    } else {
+		        FileInfo target = matches.get(0);
+		        // Comprobar si cabe en un datagrama (Base64 infla ~33%)
+		        long encodedSize = (long) Math.ceil(target.fileSize * 4.0 / 3.0);
+		        int overhead = 300; // cabeceras del mensaje
+		        if (encodedSize + overhead > DirMessage.PACKET_MAX_SIZE) {
+		            msgToSend = new DirMessage(DirMessageOps.OPERATION_DIRDL_BAD);
+		            msgToSend.setErrorCode("12");
+		            msgToSend.setErrorMessage("File too large for single datagram: " + target.fileSize + " bytes");
+		            System.err.println("✗ File too large: " + target.fileName);
+		        } else {
+		            // Leer el fichero y codificarlo en Base64
+		            try {
+		                byte[] fileBytes = java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(target.filePath));
+		                String base64Data = java.util.Base64.getEncoder().encodeToString(fileBytes);
+		                msgToSend = new DirMessage(DirMessageOps.OPERATION_DIRDL_OK);
+		                msgToSend.setDirDlFilename(target.fileName);
+		                msgToSend.setDirDlFilesize(target.fileSize);
+		                msgToSend.setDirDlFilehash(target.fileHash);
+		                msgToSend.setFileData(base64Data);
+		                System.out.println("✓ Sending file: " + target.fileName + " (" + fileBytes.length + " bytes)");
+		            } catch (java.io.IOException e) {
+		                msgToSend = new DirMessage(DirMessageOps.OPERATION_DIRDL_BAD);
+		                msgToSend.setErrorCode("13");
+		                msgToSend.setErrorMessage("Error reading file: " + e.getMessage());
+		                System.err.println("✗ Error reading file: " + target.filePath);
+		            }
+		        }
+		    }
+		    break;
+		}
+		
 		
 
 
@@ -486,6 +544,49 @@ public class NFDirectoryServer {
 
 
 
+	}
+	
+	//EXTRA el método auxiliar para dividir la lista en chunks
+	/**
+	 * Divide la lista de ficheros en trozos que quepan en un datagrama.
+	 * Devuelve un array de Strings, cada uno siendo un trozo de la lista.
+	 */
+	private String[] buildFileListChunks() {
+	    if (directoryFiles == null || directoryFiles.length == 0) {
+	        return new String[]{ "" };
+	    }
+	    // Construir la lista completa
+	    StringBuilder full = new StringBuilder();
+	    for (int i = 0; i < directoryFiles.length; i++) {
+	        FileInfo f = directoryFiles[i];
+	        full.append(f.fileHash).append("&").append(f.fileName).append("&").append(f.fileSize);
+	        if (i < directoryFiles.length - 1) full.append(",");
+	    }
+	    String fullList = full.toString();
+
+	    // Overhead estimado del mensaje (cabeceras DirMessage + seqnum + numchunks + filelist)
+	    int overhead = 200;
+	    int maxChunkBytes = DirMessage.PACKET_MAX_SIZE - overhead;
+
+	    if (fullList.length() <= maxChunkBytes) {
+	        return new String[]{ fullList };
+	    }
+
+	    // Dividir en trozos
+	    java.util.List<String> chunks = new java.util.ArrayList<>();
+	    int start = 0;
+	    while (start < fullList.length()) {
+	        int end = Math.min(start + maxChunkBytes, fullList.length());
+	        // No partir a mitad de una entrada: retroceder hasta la última coma
+	        if (end < fullList.length()) {
+	            int lastComma = fullList.lastIndexOf(',', end);
+	            if (lastComma > start) end = lastComma; // no incluir la coma
+	        }
+	        chunks.add(fullList.substring(start, end));
+	        // Saltar la coma separadora
+	        start = (end < fullList.length() && fullList.charAt(end) == ',') ? end + 1 : end;
+	    }
+	    return chunks.toArray(new String[0]);
 	}
 
 

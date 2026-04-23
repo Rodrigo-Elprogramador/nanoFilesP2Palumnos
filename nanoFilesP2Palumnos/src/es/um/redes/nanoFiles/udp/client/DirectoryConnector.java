@@ -421,66 +421,66 @@ public class DirectoryConnector {
 	 *         pudo satisfacer nuestra solicitud
 	 */
 
-	// EJE 7 MENSAJE ASCII ** MODIFICADO PARA EL COMANDO DIRFILES
+	// EXTRA IMPLEMENTADO DESDE EJE 7 MENSAJE ASCII ** MODIFICADO PARA EL COMANDO DIRFILES y MODIFICADO DE NUEVO PARA LA AMPLIACION
 	public FileInfo[] getFileList() {
-		FileInfo[] filelist = new FileInfo[0];
+	    FileInfo[] filelist = new FileInfo[0];
 
-		// 1) Mensaje de solicitud
-		DirMessage requestMessage = new DirMessage(DirMessageOps.OPERATION_FILELIST);
+	    // 1) Pedir el primer chunk
+	    DirMessage request = new DirMessage(DirMessageOps.OPERATION_FILELIST);
+	    byte[] responseData = sendAndReceiveDatagrams(request.toString().getBytes());
 
-		// 2) Serializar y enviar
-		byte[] requestData = requestMessage.toString().getBytes();
-		byte[] responseData = sendAndReceiveDatagrams(requestData);
+	    if (responseData == null) {
+	        System.err.println("✗ No response received from directory (chunk 0)");
+	        return filelist;
+	    }
 
-		// 3) Procesar respuesta
-		if (responseData == null) {
-			System.err.println("✗ No response received from directory");
-			return filelist;
-		}
+	    DirMessage response = DirMessage.fromString(new String(responseData));
+	    if (!DirMessageOps.OPERATION_FILELIST_OK.equals(response.getOperation())) {
+	        System.err.println("✗ Error getting file list: " + response.getErrorMessage());
+	        return filelist;
+	    }
 
-		String responseString = new String(responseData);
-		DirMessage responseMessage = DirMessage.fromString(responseString);
-		String operation = responseMessage.getOperation();
+	    int numchunks = response.getNumchunks();
+	    StringBuilder fullList = new StringBuilder();
+	    if (response.getFileList() != null) fullList.append(response.getFileList());
 
-		if (DirMessageOps.OPERATION_FILELIST_OK.equals(operation)) {
-			String fileListString = responseMessage.getFileList();
+	    // 2) Pedir el resto de chunks si hay más de uno
+	    for (int seq = 1; seq < numchunks; seq++) {
+	        DirMessage nextReq = new DirMessage(DirMessageOps.OPERATION_FILELIST_NEXT);
+	        nextReq.setSeqnum(seq);
+	        byte[] nextData = sendAndReceiveDatagrams(nextReq.toString().getBytes());
+	        if (nextData == null) {
+	            System.err.println("✗ No response for chunk " + seq);
+	            return filelist;
+	        }
+	        DirMessage nextResp = DirMessage.fromString(new String(nextData));
+	        if (!DirMessageOps.OPERATION_FILELIST_OK.equals(nextResp.getOperation())) {
+	            System.err.println("✗ Error in chunk " + seq + ": " + nextResp.getErrorMessage());
+	            return filelist;
+	        }
+	        // Añadir coma separadora si el acumulado no está vacío
+	        if (fullList.length() > 0 && nextResp.getFileList() != null && !nextResp.getFileList().isEmpty()) {
+	            fullList.append(",");
+	        }
+	        if (nextResp.getFileList() != null) fullList.append(nextResp.getFileList());
+	    }
 
-			// Si viene vacío -> lista vacía, no error
-			if (fileListString == null || fileListString.isBlank()) {
-				return filelist;
-			}
+	    // 3) Parsear la lista completa
+	    String all = fullList.toString();
+	    if (all.isBlank()) return filelist;
 
-			// Formato: hash1&nombre1&tamaño1,hash2&nombre2&tamaño2,...
-			String[] fileEntries = fileListString.split(",");
-			filelist = new FileInfo[fileEntries.length];
-
-			for (int i = 0; i < fileEntries.length; i++) {
-				String[] parts = fileEntries[i].split("&");
-				if (parts.length != 3) {
-					System.err.println("✗ Invalid file entry format: " + fileEntries[i]);
-					return new FileInfo[0];
-				}
-				String hash = parts[0];
-				String name = parts[1];
-				long size;
-				try {
-					size = Long.parseLong(parts[2]);
-				} catch (NumberFormatException e) {
-					System.err.println("✗ Invalid file size in entry: " + fileEntries[i]);
-					return new FileInfo[0];
-				}
-				filelist[i] = new FileInfo(hash, name, size, null);
-			}
-			return filelist;
-		}
-
-		if (DirMessageOps.OPERATION_FILELIST_BAD.equals(operation)) {
-			System.err.println("✗ Error getting file list: " + responseMessage.getErrorMessage());
-			return filelist;
-		}
-
-		System.err.println("✗ Unexpected response operation: " + operation);
-		return filelist;
+	    String[] entries = all.split(",");
+	    filelist = new FileInfo[entries.length];
+	    for (int i = 0; i < entries.length; i++) {
+	        String[] parts = entries[i].split("&");
+	        if (parts.length != 3) {
+	            System.err.println("✗ Invalid entry: " + entries[i]);
+	            return new FileInfo[0];
+	        }
+	        filelist[i] = new FileInfo(parts[0], parts[1], Long.parseLong(parts[2]), null);
+	    }
+	    System.out.println("✓ Received " + filelist.length + " files in " + numchunks + " chunk(s)");
+	    return filelist;
 	}
 
 	// EJE 7 ASCII
@@ -553,13 +553,40 @@ public class DirectoryConnector {
 		return results;
 	}
 
+	//EXTRA AMPLIACION DEL COMANDO DIRFILES
 	public DownloadedFile downloadFileFromDirectory(String hashSubstring) {
-		byte[] fileData = null;
-		String filename = null;
-		long filesize = -1;
-		String filehash = null;
+	    // 1) Construir y enviar petición
+	    DirMessage request = new DirMessage(DirMessageOps.OPERATION_DIRDL);
+	    request.setHashSubstring(hashSubstring);
+	    byte[] responseData = sendAndReceiveDatagrams(request.toString().getBytes());
 
-		return new DownloadedFile(filename, filesize, fileData, filehash);
+	    if (responseData == null) {
+	        System.err.println("✗ No response from directory for dirdl");
+	        return null;
+	    }
+
+	    DirMessage response = DirMessage.fromString(new String(responseData));
+	    String op = response.getOperation();
+
+	    if (DirMessageOps.OPERATION_DIRDL_OK.equals(op)) {
+	        // Decodificar datos Base64
+	        byte[] fileBytes = java.util.Base64.getDecoder().decode(response.getFileData());
+	        System.out.println("✓ Received file: " + response.getDirDlFilename()
+	                + " (" + fileBytes.length + " bytes)");
+	        return new DownloadedFile(
+	            response.getDirDlFilename(),
+	            response.getDirDlFilesize(),
+	            fileBytes,
+	            response.getDirDlFilehash()
+	        );
+	    } else if (DirMessageOps.OPERATION_DIRDL_BAD.equals(op)) {
+	        System.err.println("✗ Directory error [" + response.getErrorCode() + "]: "
+	                + response.getErrorMessage());
+	        return null;
+	    } else {
+	        System.err.println("✗ Unexpected response: " + op);
+	        return null;
+	    }
 	}
 
 	/**
