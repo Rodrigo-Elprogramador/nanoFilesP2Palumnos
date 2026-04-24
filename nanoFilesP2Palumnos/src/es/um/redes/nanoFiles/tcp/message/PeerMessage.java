@@ -17,10 +17,10 @@ public class PeerMessage {
 	 */
 
 	private FileInfo[] fileList; // Atributo para la lista de ficheros
-	private String fileHash; // NUEVO: Para pedir un fichero
-	private String fileName; // NUEVO: Para saber el nombre al descargar
+	private String fileHash; //  Para pedir un fichero
+	private String fileName; //Para saber el nombre al descargar
 
-	// ... (tus constructores y getters existentes) ...
+	
 
 	public void setFileHash(String hash) { this.fileHash = hash; }
 	public String getFileHash() { return fileHash; }
@@ -91,7 +91,7 @@ public class PeerMessage {
 				break;
 			case PeerMessageOps.OPCODE_FILE_NOT_FOUND: // Servidor no lo tiene
 				break;
-			case PeerMessageOps.OPCODE_FILE_CHUNK: // Servidor envía info previa al chorro de bytes
+			case PeerMessageOps.OPCODE_FILE_CHUNK: // Servidor envía info previa a loos bytes
 				message.setFileName(dis.readUTF());
 				break;
 		}

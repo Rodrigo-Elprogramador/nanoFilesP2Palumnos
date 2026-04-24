@@ -109,7 +109,7 @@ public class DirectoryConnector {
 		int attempts = 0;
 		boolean received = false;
 
-		// Bucle de retransmisión (MAX_NUMBER_OF_ATTEMPTS)
+		
 		while (attempts < MAX_NUMBER_OF_ATTEMPTS && !received) {
 			try {
 				attempts++;
@@ -140,24 +140,7 @@ public class DirectoryConnector {
 		return response;
 	}
 
-	/*
-	 * private byte[] sendAndReceiveDatagrams(byte[] requestData) { byte
-	 * responseData[] = new byte[DirMessage.PACKET_MAX_SIZE]; byte response[] =
-	 * null; if (directoryAddress == null) { System.err.
-	 * println("DirectoryConnector.sendAndReceiveDatagrams: UDP server destination address is null!"
-	 * ); System.err.println(
-	 * "DirectoryConnector.sendAndReceiveDatagrams: make sure constructor initializes field \"directoryAddress\""
-	 * ); System.exit(-1);
-	 * 
-	 * } if (socket == null) { System.err.
-	 * println("DirectoryConnector.sendAndReceiveDatagrams: UDP socket is null!");
-	 * System.err.println(
-	 * "DirectoryConnector.sendAndReceiveDatagrams: make sure constructor initializes field \"socket\""
-	 * ); System.exit(-1); } /* TODO: (Boletín SocketsUDP) Enviar datos en un
-	 * datagrama al directorio y recibir una respuesta. El array devuelto debe
-	 * contener únicamente los datos recibidos, *NO* el búfer de recepción al
-	 * completo.
-	 */
+	
 	/*
 	 * TODO: (Boletín SocketsUDP) Una vez el envío y recepción asumiendo un canal
 	 * confiable (sin pérdidas) esté terminado y probado, debe implementarse un
@@ -176,29 +159,7 @@ public class DirectoryConnector {
 	 * NOTA: Las excepciones deben tratarse de la más concreta a la más genérica.
 	 * SocketTimeoutException es más concreta que IOException.
 	 */
-	/*
-	 * DatagramPacket packetToServer = new DatagramPacket(requestData,
-	 * requestData.length,directoryAddress); //CAMBIO 1 ❌ ERROR: Falta especificar
-	 * la dirección de destino en el paquete. try { socket.send(packetToServer); }
-	 * catch (IOException e) {
-	 * System.err.println("IOexception cuando mandamos datagram packet ");
-	 * System.exit(-1); } DatagramPacket packetFromServer = new
-	 * DatagramPacket(responseData, responseData.length); //CAMBIO 2 ❌ ERRORES:
-	 * packetFromServer debe usar responseData, NO requestData socket.receive() debe
-	 * recibir packetFromServer, NO packetToServer //Arrays.copyOf() debe copiar
-	 * desde packetFromServer.getData(), NO desde responseData try {
-	 * socket.receive(packetFromServer); } catch (IOException e) {
-	 * System.err.println("IOexception cuando recibimos datagram packet ");
-	 * System.exit(-1); }
-	 * 
-	 * response = Arrays.copyOf(packetFromServer.getData(),
-	 * packetFromServer.getLength());
-	 * 
-	 * if (response != null && response.length == responseData.length) { System.err.
-	 * println("Your response is as large as the datagram reception buffer!!\n" +
-	 * "You must extract from the buffer only the bytes that belong to the datagram!"
-	 * ); } return response; }
-	 */
+	
 
 	/**
 	 * Método para probar la comunicación con el directorio mediante el envío y
@@ -245,37 +206,9 @@ public class DirectoryConnector {
 		 * "testSendAndReceive", contactar con el directorio, enviándole nuestro
 		 * PROTOCOL_ID (ver clase NanoFiles). Se deben usar mensajes "en crudo" (sin un
 		 * formato bien definido) para la comunicación.
-		 * 
-		 * PASOS: 1.Crear el mensaje a enviar (String "ping&protocolId"). 2.Crear un
-		 * datagrama con los bytes en que se codifica la cadena : 4.Enviar datagrama y
-		 * recibir una respuesta (sendAndReceiveDatagrams). : 5. Comprobar si la cadena
-		 * recibida en el datagrama de respuesta es "welcome", imprimir si éxito o
-		 * fracaso. 6.Devolver éxito/fracaso de la operación.
+		 * 		
 		 */
-		/*
-		 * // 1. Crear el mensaje a enviar con el PROTOCOL_ID String messageToSend =
-		 * "ping&" + NanoFiles.PROTOCOL_ID;
-		 * 
-		 * // 2. Convertir el mensaje a bytes byte[] requestData =
-		 * messageToSend.getBytes();
-		 * 
-		 * // 3. Enviar datagrama y recibir respuesta byte[] response =
-		 * sendAndReceiveDatagrams(requestData);
-		 * 
-		 * // 4. Procesar la respuesta recibida if (response != null) { String
-		 * receivedMessage = new String(response, 0, response.length);
-		 * System.out.println("Response from directory: " + receivedMessage);
-		 * 
-		 * // 5. Comprobar si la respuesta es "welcome" if
-		 * (receivedMessage.equals("welcome")) { System.out.
-		 * println("✓ Ping successful: Directory is compatible with protocol " +
-		 * NanoFiles.PROTOCOL_ID); success = true; } else {
-		 * System.err.println("✗ Ping failed: Expected 'welcome' but received '" +
-		 * receivedMessage + "'"); } } else {
-		 * System.err.println("✗ Ping failed: No response received from directory"); }
-		 * 
-		 * // 6. Devolver éxito/fracaso
-		 */
+		
 
 		byte[] requestData = new String("ping&" + NanoFiles.PROTOCOL_ID).getBytes();
 		byte[] response = sendAndReceiveDatagrams(requestData);
@@ -309,30 +242,30 @@ public class DirectoryConnector {
 		 * 6.Extraer datos del objeto DirMessage y procesarlos 7.Devolver éxito/fracaso
 		 * de la operación
 		 */
-		// 1. Crear el mensaje DirMessage de tipo PING
+		// 1. Creamos el mensaje DirMessage de tipo PING
 		DirMessage pingMessage = new DirMessage(DirMessageOps.OPERATION_PING);
 
-		// 2. Establecer el protocolId usando el setter
+		// 2. Establecem0s el protocolId usando el setter
 		pingMessage.setProtocolID(NanoFiles.PROTOCOL_ID);
 
-		// 3. Convertir el objeto DirMessage a String
+		// 3. Convertimos el objeto DirMessage a String
 		String messageString = pingMessage.toString();
 
-		// 4. Convertir el String a bytes para enviar en el datagrama
+		// 4. Convertimos el String a bytes para enviar en el datagrama
 		byte[] requestData = messageString.getBytes();
 
-		// 5. Enviar datagrama y recibir respuesta
+		// 5. Enviamos datagrama y recibir respuesta
 		byte[] responseData = sendAndReceiveDatagrams(requestData);
 
-		// 6. Procesar la respuesta recibida
+		// 6 Procesamos la respuesta recibida
 		if (responseData != null) {
-			// Convertir los bytes recibidos a String
+			// Convertimos los bytes recibidos a String
 			String responseString = new String(responseData);
 
-			// Convertir el String a objeto DirMessage usando fromString
+			// Convertimos el String a objeto DirMessage usando fromString
 			DirMessage responseMessage = DirMessage.fromString(responseString);
 
-			// 7. Extraer la operación del mensaje de respuesta y verificar
+			// 7. Extraemos la operación del mensaje de respuesta y verificar
 			String operation = responseMessage.getOperation();
 
 			if (operation.equals(DirMessageOps.OPERATION_PING_OK)) {
@@ -362,22 +295,21 @@ public class DirectoryConnector {
 	public boolean registerFileServer(int serverPort) {
 		boolean success = false;
 
-		// TODO: Ver TODOs en pingDirectory y seguir esquema similar
 
-		// 1. Crear el mensaje de solicitud
+		// 1. Creamos el mensaje de solicitud
 		DirMessage requestMessage = new DirMessage(DirMessageOps.OPERATION_REGISTER);
 
-		// 2. Establecer nickname y puerto
+		// 2. Establecemos nickname y puerto
 		requestMessage.setNickname(NanoFiles.peerNickname);
 		requestMessage.setPort(serverPort);
 
-		// 3. Convertir a String
+		// 3. Convertimos a String
 		String messageString = requestMessage.toString();
 
-		// 4. Convertir a bytes
+		// 4. Convertimos a bytes
 		byte[] requestData = messageString.getBytes();
 
-		// 5. Enviar y recibir respuesta
+		// 5. Envimosr y recibimos respuesta
 		byte[] responseData = sendAndReceiveDatagrams(requestData);
 
 		// 6. Procesar respuesta
@@ -395,11 +327,10 @@ public class DirectoryConnector {
 				String errorMessage = responseMessage.getErrorMessage();
 
 				if (errorCode.equals("2")) {
-					// Nickname ya en uso - necesitamos generar uno nuevo
+					// Nickname ya en uso  necesitamos generar uno nuevo
 					System.err.println("✗ Registration failed: " + errorMessage);
 					System.out.println("→ Nickname '" + NanoFiles.peerNickname + "' is already in use");
-					// Aquí podrías generar un nuevo nickname automáticamente
-					// o dejar que el usuario lo cambie manualmente
+					
 				} else {
 					System.err.println("✗ Registration failed: " + errorMessage);
 				}
@@ -425,7 +356,6 @@ public class DirectoryConnector {
 	public FileInfo[] getFileList() {
 	    FileInfo[] filelist = new FileInfo[0];
 
-	    // 1) Pedir el primer chunk
 	    DirMessage request = new DirMessage(DirMessageOps.OPERATION_FILELIST);
 	    byte[] responseData = sendAndReceiveDatagrams(request.toString().getBytes());
 
@@ -444,7 +374,6 @@ public class DirectoryConnector {
 	    StringBuilder fullList = new StringBuilder();
 	    if (response.getFileList() != null) fullList.append(response.getFileList());
 
-	    // 2) Pedir el resto de chunks si hay más de uno
 	    for (int seq = 1; seq < numchunks; seq++) {
 	        DirMessage nextReq = new DirMessage(DirMessageOps.OPERATION_FILELIST_NEXT);
 	        nextReq.setSeqnum(seq);
@@ -458,14 +387,13 @@ public class DirectoryConnector {
 	            System.err.println("✗ Error in chunk " + seq + ": " + nextResp.getErrorMessage());
 	            return filelist;
 	        }
-	        // Añadir coma separadora si el acumulado no está vacío
+	        // Añadimos coma separadora si el acumulado no está vacío
 	        if (fullList.length() > 0 && nextResp.getFileList() != null && !nextResp.getFileList().isEmpty()) {
 	            fullList.append(",");
 	        }
 	        if (nextResp.getFileList() != null) fullList.append(nextResp.getFileList());
 	    }
 
-	    // 3) Parsear la lista completa
 	    String all = fullList.toString();
 	    if (all.isBlank()) return filelist;
 
@@ -487,19 +415,19 @@ public class DirectoryConnector {
 	public Map<String, InetSocketAddress> getPeerList() {
 		Map<String, InetSocketAddress> peers = new LinkedHashMap<String, InetSocketAddress>();
 
-		// 1. Crear el mensaje de solicitud
+		// 1. Creamos el mensaje de solicitud
 		DirMessage requestMessage = new DirMessage(DirMessageOps.OPERATION_PEERLIST);
 
-		// 2. Convertir a String
+		// 2. Convertimos a String
 		String messageString = requestMessage.toString();
 
-		// 3. Convertir a bytes
+		// 3 Convertimos a bytes
 		byte[] requestData = messageString.getBytes();
 
-		// 4. Enviar y recibir respuesta
+		// 4. Enviamos y recibimos respuesta
 		byte[] responseData = sendAndReceiveDatagrams(requestData);
 
-		// 5. Procesar respuesta
+		// 5. Procesamos respuesta
 		if (responseData != null) {
 			String responseString = new String(responseData);
 			DirMessage responseMessage = DirMessage.fromString(responseString);
@@ -507,11 +435,10 @@ public class DirectoryConnector {
 			String operation = responseMessage.getOperation();
 
 			if (operation.equals(DirMessageOps.OPERATION_PEERLIST_OK)) {
-				// Parsear la lista de peers
+				// Parseamos la lista de peers
 				String peerListString = responseMessage.getPeerList();
 
 				if (peerListString != null && !peerListString.isEmpty()) {
-					// Formato: nick1&IP1:puerto1,nick2&IP2:puerto2,...
 					String[] peerEntries = peerListString.split(",");
 
 					for (String peerEntry : peerEntries) {
@@ -555,7 +482,7 @@ public class DirectoryConnector {
 
 	//EXTRA AMPLIACION DEL COMANDO DIRFILES
 	public DownloadedFile downloadFileFromDirectory(String hashSubstring) {
-	    // 1) Construir y enviar petición
+	    // 1) Construimos y enviamos petición
 	    DirMessage request = new DirMessage(DirMessageOps.OPERATION_DIRDL);
 	    request.setHashSubstring(hashSubstring);
 	    byte[] responseData = sendAndReceiveDatagrams(request.toString().getBytes());
@@ -569,7 +496,6 @@ public class DirectoryConnector {
 	    String op = response.getOperation();
 
 	    if (DirMessageOps.OPERATION_DIRDL_OK.equals(op)) {
-	        // Decodificar datos Base64
 	        byte[] fileBytes = java.util.Base64.getDecoder().decode(response.getFileData());
 	        System.out.println("✓ Received file: " + response.getDirDlFilename()
 	                + " (" + fileBytes.length + " bytes)");

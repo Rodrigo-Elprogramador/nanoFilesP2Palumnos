@@ -48,12 +48,12 @@ public class NFDirectoryServer {
 
 	public NFDirectoryServer(double corruptionProbability, String directoryFilesPath) throws SocketException {
 		/*
-		 * Guardar la probabilidad de pérdida de datagramas (simular enlace no
-		 * confiable)
+		 * Guardamos la probabilidad de pérdida de datagramas 
+		 * 
 		 */
 		messageDiscardProbability = corruptionProbability;
 		/*
-		 * Cargar los ficheros del directorio compartido.
+		 * Cargarmoslos ficheros del directorio compartido
 		 */
 		File dir = new File(directoryFilesPath);
 		if (!dir.exists()) {
@@ -110,7 +110,7 @@ public class NFDirectoryServer {
 						+ "Check that all TODOs have been correctly addressed!");
 				System.exit(-1);
 			} else {
-				// Vemos si el mensaje debe ser ignorado (simulación de un canal no confiable)
+				// Vemos si el mensaje debe ser ignorado
 				double rand = Math.random();
 				if (rand < messageDiscardProbability) {
 					System.err.println(
@@ -166,58 +166,8 @@ public class NFDirectoryServer {
 		 * en cuyo caso se responderá con "welcome" (en otro caso, "denied").
 		 */
 		
-		/*//BOLETIN 3 EJERCICIO 3 SE HA CAMBIADO COSAS QUE ESTABAN DEL BOLETIN 2 EJER 4
-		String responseMessage = null;
-	    
-	    // Comprobar el tipo de mensaje recibido y preparar la respuesta adecuada
-	    if (messageFromClient.equals("ping")) {
-	        // Caso 1: Mensaje exactamente "ping" → responder "pingok"
-	        responseMessage = "pingok";
-	        System.out.println("→ Received 'ping', responding with 'pingok'");
-	        
-	    } else if (messageFromClient.startsWith("ping&")) {
-	        // Caso 2: Mensaje del tipo "ping&PROTOCOL_ID"
-	        // Extraer el PROTOCOL_ID del mensaje recibido
-	        String[] parts = messageFromClient.split("&");
-	        
-	        if (parts.length == 2) {
-	            String receivedProtocolId = parts[1];
-	            System.out.println("→ Received ping with protocol ID: " + receivedProtocolId);
-	            
-	            // Comprobar si el PROTOCOL_ID coincide con el nuestro
-	            if (receivedProtocolId.equals(NanoFiles.PROTOCOL_ID)) {
-	                // Protocolo compatible → responder "welcome"
-	                responseMessage = "welcome";
-	                System.out.println("→ Protocol compatible, responding with 'welcome'");
-	            } else {
-	                // Protocolo incompatible → responder "denied"
-	                responseMessage = "denied";
-	                System.err.println("→ Protocol incompatible (expected '" + NanoFiles.PROTOCOL_ID 
-	                        + "' but received '" + receivedProtocolId + "'), responding with 'denied'");
-	            }
-	        } else {
-	            // Formato incorrecto
-	            responseMessage = "invalid";
-	            System.err.println("→ Invalid ping format, responding with 'invalid'");
-	        }
-	        
-	    } else {
-	        // Caso 3: Mensaje no reconocido → responder "invalid"
-	        responseMessage = "invalid";
-	        System.err.println("→ Unrecognized message, responding with 'invalid'");
-	    }
-	    
-	    // Enviar la respuesta al cliente
-	    byte[] responseData = responseMessage.getBytes();
-	    DatagramPacket responsePacket = new DatagramPacket(
-	        responseData, 
-	        responseData.length, 
-	        pkt.getAddress(),  // Dirección IP del cliente
-	        pkt.getPort()      // Puerto del cliente
-	    );
-	    
-	    socket.send(responsePacket);
-	    System.out.println("→ Response sent: " + responseMessage + "\n");*/
+		//BOLETIN 3 EJERCICIO 3 SE HA CAMBIADO COSAS QUE ESTABAN DEL BOLETIN 2 EJER 4
+		
 		
 		InetSocketAddress clientAddr = (InetSocketAddress) pkt.getSocketAddress();
 		String messageToClient;
@@ -270,15 +220,15 @@ public class NFDirectoryServer {
 		 * métodos "getter" para procesar el mensaje y consultar/modificar el estado del
 		 * servidor.
 		 */
-		// 1. Construir String a partir de los datos recibidos en el datagrama
+		// 1. Construimos String a partir de los datos recibidos en el datagrama
 		String receivedMessage = new String(pkt.getData(), 0, pkt.getLength());
 		System.out.println("→ Received message from " + pkt.getSocketAddress() + ":");
 		System.out.println(receivedMessage);
 		
-		// 2. Construir un objeto DirMessage a partir de la cadena recibida
+		// 2. Construimos un objeto DirMessage a partir de la cadena recibida
 		DirMessage messageFromClient = DirMessage.fromString(receivedMessage);
 		
-		// 3. Obtener el tipo de operación del mensaje recibido
+		// 3. Obtenemos el tipo de operación del mensaje recibido
 		String operation = messageFromClient.getOperation();
 		
 		// 4. Variable para almacenar el mensaje de respuesta
@@ -316,17 +266,17 @@ public class NFDirectoryServer {
 			 * procesar la petición recibida (éxito o fracaso) con los datos relevantes, a
 			 * modo de depuración en el servidor
 			 */
-			// Obtener el protocolId del mensaje recibido
+			// Obtenemos el protocolId del mensaje recibido
 			String receivedProtocolId = messageFromClient.getProtocolId();
 			System.out.println("→ Processing PING with protocol ID: " + receivedProtocolId);
 			
-			// Comprobar si el protocolId coincide con el nuestro
+			// Comprobamos si el protocolId coincide con el nuestro
 			if (receivedProtocolId != null && receivedProtocolId.equals(NanoFiles.PROTOCOL_ID)) {
-				// Protocolo compatible → responder con PING_OK
+				// Protocolo compatible con responder con PING_OK
 				msgToSend = new DirMessage(DirMessageOps.OPERATION_PING_OK);
 				System.out.println("✓ Protocol compatible, responding with PING_OK");
 			} else {
-				// Protocolo incompatible → responder con PING_BAD
+				// Protocolo incompatible con responder con PING_BAD
 				msgToSend = new DirMessage(DirMessageOps.OPERATION_PING_BAD);
 				msgToSend.setErrorCode("1");
 				msgToSend.setErrorMessage("Incompatible protocol. Expected " + NanoFiles.PROTOCOL_ID 
@@ -355,17 +305,17 @@ public class NFDirectoryServer {
 		//EJE 7 ASCII
 		
 		case DirMessageOps.OPERATION_REGISTER: {
-			// Obtener nickname y puerto del mensaje
+			// Obtenemos nickname y puerto del mensaje
 			String clientNickname = messageFromClient.getNickname();
 			int clientPort = messageFromClient.getPort();
 			
 			System.out.println("→ Processing REGISTER request: nickname=" + clientNickname + ", port=" + clientPort);
 			
-			// Obtener la IP del cliente desde el datagrama
+			// Obtenemos la IP del cliente desde el datagrama
 			InetSocketAddress clientAddress = (InetSocketAddress) pkt.getSocketAddress();
 			InetAddress clientIP = clientAddress.getAddress();
 			
-			// Comprobar si el nickname ya está registrado
+			// Comprobamos si el nickname ya está registrado
 			if (registeredPeers.containsKey(clientNickname)) {
 				// Nickname ya existe
 				msgToSend = new DirMessage(DirMessageOps.OPERATION_REGISTER_BAD);
@@ -373,14 +323,14 @@ public class NFDirectoryServer {
 				msgToSend.setErrorMessage("Nickname '" + clientNickname + "' already in use");
 				System.err.println("✗ Registration failed: Nickname already in use");
 			} else {
-				// Verificar que el puerto es válido
+				// Verificamos que el puerto es válido
 				if (clientPort <= 0 || clientPort > 65535) {
 					msgToSend = new DirMessage(DirMessageOps.OPERATION_REGISTER_BAD);
 					msgToSend.setErrorCode("4");
 					msgToSend.setErrorMessage("Invalid port number: " + clientPort);
 					System.err.println("✗ Registration failed: Invalid port");
 				} else {
-					// Registrar el peer
+					// Registramos el peer
 					InetSocketAddress peerAddress = new InetSocketAddress(clientIP, clientPort);
 					registeredPeers.put(clientNickname, peerAddress);
 					
@@ -398,13 +348,12 @@ public class NFDirectoryServer {
 		case DirMessageOps.OPERATION_PEERLIST: {
 			System.out.println("→ Processing PEERLIST request");
 			
-			// Construir la respuesta con la lista de peers
+			// Construimos la respuesta con la lista de peers
 			if (registeredPeers != null && !registeredPeers.isEmpty()) {
-				// Crear mensaje de respuesta exitosa
+				// Creamos mensaje de respuesta exitosa
 				msgToSend = new DirMessage(DirMessageOps.OPERATION_PEERLIST_OK);
 				
-				// Construir la cadena con la lista de peers
-				// Formato: nick1&IP1:puerto1,nick2&IP2:puerto2,...
+				// Construimos la cadena con la lista de peers
 				StringBuilder peerListBuilder = new StringBuilder();
 				int count = 0;
 				for (String nick : registeredPeers.keySet()) {
@@ -416,7 +365,7 @@ public class NFDirectoryServer {
 					peerListBuilder.append(":");
 					peerListBuilder.append(address.getPort());
 					
-					// Añadir coma si no es el último peer
+					// Añadimos coma si no es el último peer
 					if (count < registeredPeers.size() - 1) {
 						peerListBuilder.append(",");
 					}
@@ -459,7 +408,7 @@ public class NFDirectoryServer {
 		    String sub = messageFromClient.getHashSubstring();
 		    System.out.println("→ Processing DIRDL request, hash substring: " + sub);
 
-		    // Buscar coincidencias
+		    // Buscam0s coincidencias
 		    java.util.List<FileInfo> matches = new java.util.ArrayList<>();
 		    for (FileInfo f : directoryFiles) {
 		        if (f.fileHash.contains(sub)) matches.add(f);
@@ -477,16 +426,16 @@ public class NFDirectoryServer {
 		        System.err.println("✗ Ambiguous substring: " + sub);
 		    } else {
 		        FileInfo target = matches.get(0);
-		        // Comprobar si cabe en un datagrama (Base64 infla ~33%)
+		        // Comprobamos si cabe en un datagrama 
 		        long encodedSize = (long) Math.ceil(target.fileSize * 4.0 / 3.0);
-		        int overhead = 300; // cabeceras del mensaje
+		        int overhead = 300; 
 		        if (encodedSize + overhead > DirMessage.PACKET_MAX_SIZE) {
 		            msgToSend = new DirMessage(DirMessageOps.OPERATION_DIRDL_BAD);
 		            msgToSend.setErrorCode("12");
 		            msgToSend.setErrorMessage("File too large for single datagram: " + target.fileSize + " bytes");
 		            System.err.println("✗ File too large: " + target.fileName);
 		        } else {
-		            // Leer el fichero y codificarlo en Base64
+		            // Leemos el fichero y codificarlo en Base64
 		            try {
 		                byte[] fileBytes = java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(target.filePath));
 		                String base64Data = java.util.Base64.getEncoder().encodeToString(fileBytes);
@@ -522,15 +471,15 @@ public class NFDirectoryServer {
 		 * codifica el string y finalmente enviarlos en un datagrama
 		 */
 		
-		// 5. Convertir el objeto DirMessage de respuesta a String
+		// 5. Convertimos el objeto DirMessage de respuesta a String
 		String responseString = msgToSend.toString();
 		System.out.println("→ Sending response:");
 		System.out.println(responseString);
 		
-		// 6. Convertir el String a bytes
+		// 6. Convertimos el String a bytes
 		byte[] responseData = responseString.getBytes();
 		
-		// 7. Crear el datagrama de respuesta y enviarlo al cliente
+		// 7. Crearmos el datagrama de respuesta y enviarlo al cliente
 		InetSocketAddress clientAddr = (InetSocketAddress) pkt.getSocketAddress();
 		DatagramPacket responsePacket = new DatagramPacket(
 			responseData, 
@@ -555,7 +504,7 @@ public class NFDirectoryServer {
 	    if (directoryFiles == null || directoryFiles.length == 0) {
 	        return new String[]{ "" };
 	    }
-	    // Construir la lista completa
+	    // Construimos la lista completa
 	    StringBuilder full = new StringBuilder();
 	    for (int i = 0; i < directoryFiles.length; i++) {
 	        FileInfo f = directoryFiles[i];
@@ -572,18 +521,17 @@ public class NFDirectoryServer {
 	        return new String[]{ fullList };
 	    }
 
-	    // Dividir en trozos
+	    // Dividimos en trozos
 	    java.util.List<String> chunks = new java.util.ArrayList<>();
 	    int start = 0;
 	    while (start < fullList.length()) {
 	        int end = Math.min(start + maxChunkBytes, fullList.length());
-	        // No partir a mitad de una entrada: retroceder hasta la última coma
 	        if (end < fullList.length()) {
 	            int lastComma = fullList.lastIndexOf(',', end);
 	            if (lastComma > start) end = lastComma; // no incluir la coma
 	        }
 	        chunks.add(fullList.substring(start, end));
-	        // Saltar la coma separadora
+	        // Saltamos la coma separadora
 	        start = (end < fullList.length() && fullList.charAt(end) == ',') ? end + 1 : end;
 	    }
 	    return chunks.toArray(new String[0]);

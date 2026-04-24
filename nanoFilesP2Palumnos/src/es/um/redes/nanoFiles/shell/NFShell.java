@@ -18,9 +18,7 @@ public class NFShell {
 	boolean enableComSocketIn = false;
 	private boolean skipValidateArgs;
 
-	/*
-	 * Testing-related: print command to stdout (when reading commands from stdin)
-	 */
+	
 	public static final String FILENAME_TEST_SHELL = ".nanofiles-test-shell";
 	public static boolean enableVerboseShell = false;
 
@@ -31,22 +29,19 @@ public class NFShell {
 		System.out.println("For help, type 'help'");
 	}
 
-	// devuelve el comando introducido por el usuario
 	public byte getCommand() {
 		return command;
 	}
 
-	// Devuelve los parámetros proporcionados por el usuario para el comando actual
 	public String[] getCommandArguments() {
 		return commandArgs;
 	}
 
-	// Espera hasta obtener un comando válido entre los comandos existentes
+	// Esperamos hasta obtener un comando válido entre los comandos existentes
 	public void readGeneralCommand() {
 		boolean validArgs;
 		do {
 			commandArgs = readGeneralCommandFromStdIn();
-			// si el comando tiene parámetros hay que validarlos
 			validArgs = validateCommandArguments(commandArgs);
 		} while (!validArgs);
 	}
@@ -58,7 +53,7 @@ public class NFShell {
 			System.out.print(
 					"Do you want to use '" + defaultDirectory + "' as location of the directory server? (y/n): ");
 			String input = reader.nextLine().trim().toLowerCase();
-			if (input.length() == 1) { // Verificar que la entrada es un solo carácter
+			if (input.length() == 1) { // Verificamos que la entrada es un solo carácter
 				response = input.charAt(0);
 				if (response == 'y') {
 					directory = defaultDirectory;
@@ -74,7 +69,7 @@ public class NFShell {
 		return directory;
 	}
 
-	// Usa la entrada estándar para leer comandos y procesarlos
+	// Usamos la entrada estándar para leer comandos y procesarlos
 	private String[] readGeneralCommandFromStdIn() {
 		String[] args = new String[0];
 		Vector<String> vargs = new Vector<String>();
@@ -93,14 +88,11 @@ public class NFShell {
 				System.out.println(input);
 			}
 			skipValidateArgs = false;
-			// Dependiendo del comando...
 			switch (command) {
 			case NFCommands.COM_INVALID:
-				// El comando no es válido
 				System.out.println("Invalid command");
 				continue;
 			case NFCommands.COM_HELP:
-				// Mostramos la ayuda
 				NFCommands.printCommandsHelp();
 				continue;
 			case NFCommands.COM_QUIT:

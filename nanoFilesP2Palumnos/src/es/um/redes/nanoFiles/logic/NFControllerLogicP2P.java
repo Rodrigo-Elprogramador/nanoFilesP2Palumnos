@@ -99,7 +99,7 @@ public class NFControllerLogicP2P {
 			 * introducidos mediante el shell.
 			 */
 			fileServer.test();
-			// Este código es inalcanzable: el método 'test' nunca retorna...
+			
 		} catch (IOException e1) {
 			e1.printStackTrace();
 			System.err.println("Cannot start the file server");
@@ -123,7 +123,6 @@ public class NFControllerLogicP2P {
 			NFConnector nfConnector = new NFConnector(new InetSocketAddress(NFServer.PORT));
 			nfConnector.test();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -160,7 +159,6 @@ public class NFControllerLogicP2P {
                 System.err.println("✗ Error: Received null file list from peer.");
             }
             
-            // Nota: El conector debería cerrarse si has implementado un método close()
             
         } catch (IOException e) {
             System.err.println("✗ Error connecting to peer to get file list: " + e.getMessage());
@@ -192,7 +190,7 @@ public class NFControllerLogicP2P {
 	        // 3. Creamos el conector TCP hacia ese peer
 	        NFConnector connector = new NFConnector(peerAddr);
 	        
-	        // 4. Descarga en una ubicación temporal con un nombre único
+	        // 4. Descargamos en una ubicación temporal con un nombre único
 	        String folder = NanoFiles.sharedDirname; 
 	        String tempPath = folder + "/download_" + targetHashSubstring.substring(0, 5);
 
@@ -200,7 +198,7 @@ public class NFControllerLogicP2P {
 	        String remoteFileName = connector.downloadFile(targetHashSubstring, tempPath);
 	        
 	        if (remoteFileName != null) {
-	            // 6. Renombra el archivo al nombre real preservando la extensión
+	            // 6. Renombra el archivo al nombre real 
 	            java.nio.file.Path tempFile = java.nio.file.Paths.get(tempPath);
 	            java.nio.file.Path finalPath = java.nio.file.Paths.get(folder, remoteFileName);
 	            java.nio.file.Files.move(tempFile, finalPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
@@ -230,9 +228,7 @@ public class NFControllerLogicP2P {
 			System.err.println("* Cannot start download - No list of server addresses provided");
 			return false;
 		}
-		// TODO: crear conectores TCP solo a los servidores que confirmen el hash
-		// pedido, obtener nombre remoto, reservar nombre local sin colisiones, alternar
-		// descarga de chunks y verificar hash final. Cerrar los sockets al terminar.
+		
 
 
 
@@ -256,9 +252,7 @@ public class NFControllerLogicP2P {
 	 */
 	protected int getServerPort() {
 		
-		/*
-		 * TODO: Devolver el puerto de escucha de nuestro servidor de ficheros
-		 */
+		
 		if (fileServer != null) {
 	        return fileServer.getPort();
 	    }
@@ -270,9 +264,7 @@ public class NFControllerLogicP2P {
 	 * 
 	 */
 	protected void stopFileServer() {
-		/*
-		 * TODO: Enviar señal para detener nuestro servidor de ficheros en segundo plano
-		 */
+		
 		if (fileServer != null) {
 	        fileServer.stopServer();
 	        fileServer = null;

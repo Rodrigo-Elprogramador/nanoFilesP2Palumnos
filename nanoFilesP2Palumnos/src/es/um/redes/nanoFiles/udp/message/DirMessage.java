@@ -13,7 +13,7 @@ package es.um.redes.nanoFiles.udp.message;
  *
  */
 public class DirMessage {
-	public static final int PACKET_MAX_SIZE = 65507; // 65535 - 8 (UDP header) - 20 (IP header)
+	public static final int PACKET_MAX_SIZE = 65507; 
 
 	private static final char DELIMITER = ':'; // Define el delimitador
 	private static final char END_LINE = '\n'; // Define el carácter de fin de línea
@@ -29,8 +29,8 @@ public class DirMessage {
 	 */
 	private static final String FIELDNAME_PROTOCOL_ID = "protocolid"; // ← TODO EN MINÚSCULAS
 	private static final String FIELDNAME_ERROR_CODE = "errorcode";    // ← TODO EN MINÚSCULAS
-	private static final String FIELDNAME_ERROR_MESSAGE = "errormessage"; // ← TODO EN MINÚSCULAS PUES El servidor en fromString() convierte el nombre del campo a minúsculas
-	//EJE 7 ASCII																		//En el switch busco "protocolId" pero llega "protocolid" → NO coincide → va al default → PANIC
+	private static final String FIELDNAME_ERROR_MESSAGE = "errormessage"; // ← TODO EN MINÚSCULAS 
+	//EJE 7 ASCII																		
 	private static final String FIELDNAME_FILELIST = "filelist";
 	private static final String FIELDNAME_NICKNAME = "nickname";
 	private static final String FIELDNAME_PORT = "port";
@@ -238,23 +238,21 @@ public class DirMessage {
 		 * delimitador DELIMITER, y guardarlo en variables locales.
 		 */
 
-		// System.out.println("DirMessage read from socket:");
-		// System.out.println(message);
+		
 		String[] lines = message.split(END_LINE + "");
-		// Local variables to save data during parsing
 		DirMessage m = null;
 
 
 
 		for (String line : lines) {
-			// Saltar líneas vacías (incluida la línea final del mensaje)
+			// Saltamos líneas vacias 
 			if (line.isEmpty()) {
 				continue;
 			}
 			
 			int idx = line.indexOf(DELIMITER); // Posición del delimitador
 			
-			// Verificar que el delimitador existe en la línea
+			// Verificamos que el delimitador existe en la linea
 			if (idx == -1) {
 				System.err.println("WARNING: DirMessage.fromString - line without delimiter: \"" + line + "\"");
 				continue; // Saltar esta línea
@@ -383,14 +381,11 @@ public class DirMessage {
 			sb.append(FIELDNAME_ERROR_MESSAGE + DELIMITER + errorMessage + END_LINE);
 			break;
 		case DirMessageOps.OPERATION_PING_OK:
-			// No hay campos adicionales
 			break;
 		// EJE 7 ASCII
 		case DirMessageOps.OPERATION_FILELIST:
-			// No hay campos adicionales
 			break;
 		case DirMessageOps.OPERATION_FILELIST_OK:
-			//EXTRA AÑADIMOS seqnum y numchunks 
 		    sb.append(FIELDNAME_SEQNUM    + DELIMITER + seqnum    + END_LINE);
 		    sb.append(FIELDNAME_NUMCHUNKS + DELIMITER + numchunks + END_LINE);
 			if (fileList != null && !fileList.isEmpty()) {
@@ -406,14 +401,12 @@ public class DirMessage {
 			sb.append(FIELDNAME_PORT + DELIMITER + port + END_LINE);
 			break;
 		case DirMessageOps.OPERATION_REGISTER_OK:
-			// No hay campos adicionales
 			break;
 		case DirMessageOps.OPERATION_REGISTER_BAD:
 			sb.append(FIELDNAME_ERROR_CODE + DELIMITER + errorCode + END_LINE);
 			sb.append(FIELDNAME_ERROR_MESSAGE + DELIMITER + errorMessage + END_LINE);
 			break;
 		case DirMessageOps.OPERATION_PEERLIST:
-			// No hay campos adicionales
 			break;
 		case DirMessageOps.OPERATION_PEERLIST_OK:
 			if (peerList != null && !peerList.isEmpty()) {
@@ -455,13 +448,11 @@ public class DirMessage {
 	}
 	
 	//EXTRAS
-	//seqnum / numchunks
 	public void setSeqnum(int s)    { this.seqnum = s; }
 	public int  getSeqnum()         { return seqnum; }
 	public void setNumchunks(int n) { this.numchunks = n; }
 	public int  getNumchunks()      { return numchunks; }
 
-	// ── hashSubstring (para dirDl) 
 	public void setHashSubstring(String hs) {
 	    if (!operation.equals(DirMessageOps.OPERATION_DIRDL))
 	        throw new RuntimeException("setHashSubstring: tipo incorrecto: " + operation);

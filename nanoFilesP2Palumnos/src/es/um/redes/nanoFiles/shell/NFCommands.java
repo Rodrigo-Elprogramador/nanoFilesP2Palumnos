@@ -16,7 +16,6 @@ public class NFCommands {
 	public static final byte COM_SOCKET_IN = 100;
 	public static final byte COM_PEERLIST = 12;
 	public static final byte COM_FILELIST_PEER = 13;
-// Upload command removed
 	public static final byte COM_NICK = 14;
 
 
@@ -80,14 +79,14 @@ public class NFCommands {
 	 * Transforma una cadena introducida en el código de comando correspondiente
 	 */
 	public static byte stringToCommand(String comStr) {
-		//Busca entre los comandos si es válido y devuelve su código
+		//Buscamos entre los comandos si es válido y devuelve su código
 		for (int i = 0;
 		i < _valid_user_commands_str.length; i++) {
 			if (_valid_user_commands_str[i].equalsIgnoreCase(comStr)) {
 				return _valid_user_commands[i];
 			}
 		}
-		//Si no se corresponde con ninguna cadena entonces devuelve el código de comando no válido
+		//Si no se corresponde con ninguna cadena entonces devuelvemos el código de comando no válido
 		return COM_INVALID;
 	}
 

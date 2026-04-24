@@ -38,7 +38,6 @@ public class DirMessageOps {
 		public static final String OPERATION_DIRDL_BAD   = "dirDlBad";
 	
 	
-	// TODO: definir las operaciones del protocolo de directorio
 
 
 

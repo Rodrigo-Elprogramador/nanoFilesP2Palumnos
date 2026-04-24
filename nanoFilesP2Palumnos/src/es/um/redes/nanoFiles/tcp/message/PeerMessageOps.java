@@ -14,10 +14,10 @@ public class PeerMessageOps {
 	 */
 
 	public static final byte OPCODE_GET_FILE_LIST = 1;  // Cliente pide lista
-	public static final byte OPCODE_FILE_LIST = 2;      // Servidor envía lista
+	public static final byte OPCODE_FILE_LIST = 2;      // Servidor envia lista.
 	public static final byte OPCODE_DOWNLOAD_FILE = 3;  // Cliente pide un fichero (por hash)
-	public static final byte OPCODE_FILE_NOT_FOUND = 4; // Servidor dice que no tiene el fichero
-	public static final byte OPCODE_FILE_CHUNK = 5;     // Servidor envía un trozo del fichero
+	public static final byte OPCODE_FILE_NOT_FOUND = 4; // Servidor dice que no tiene el fichero.
+	public static final byte OPCODE_FILE_CHUNK = 5;     // Servidor envia un trozo del fichero
 
 
 	/*
@@ -57,14 +57,14 @@ public class PeerMessageOps {
 	}
 
 	/**
-	 * Transforma una cadena en el opcode correspondiente
+	 * Transformamos una cadena en el opcode correspondiente
 	 */
 	protected static byte operationToOpcode(String opStr) {
 		return _operation_to_opcode.getOrDefault(opStr.toLowerCase(), OPCODE_INVALID_CODE);
 	}
 
 	/**
-	 * Transforma un opcode en la cadena correspondiente
+	 * Transformamos un opcode en la cadena correspondiente
 	 */
 	public static String opcodeToOperation(byte opcode) {
 		return _opcode_to_operation.getOrDefault(opcode, null);

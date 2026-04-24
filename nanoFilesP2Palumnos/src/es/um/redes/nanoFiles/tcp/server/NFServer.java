@@ -121,7 +121,7 @@ public class NFServer implements Runnable {
 
         while (!stopServer) {
             try {
-                // 1. Esperamos una nueva conexión de un cliente (bloqueante)
+                // 1. Esperamos una nueva conexión de un cliente
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("* New client connected from " + clientSocket.getInetAddress());
 
@@ -131,7 +131,7 @@ public class NFServer implements Runnable {
                  * creamos un hilo nuevo para este cliente específico.
                  */
                 NFServerThread thread = new NFServerThread(this, clientSocket);
-                thread.start(); // Esto lanza el run() de NFServerThread y libera este bucle
+                thread.start(); //  lanzamos el run de NFServerThread y libera este bucle
 
             } catch (IOException e) {
                 if (!stopServer) {
@@ -154,13 +154,10 @@ public class NFServer implements Runnable {
      * Cierra el socket para desbloquear el hilo que está en accept().
      */
     public void stopServer() {
-        this.stopServer = true; // Marcamos el flag para que el bucle while(!stopServer) termine
+        this.stopServer = true; 
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {
-                /* * IMPORTANTE: Al cerrar el socket, el método accept() que está 
-                 * esperando lanzará una IOException, lo cual es normal y 
-                 * hará que el hilo termine.
-                 */
+               
                 serverSocket.close(); 
             }
         } catch (IOException e) {
@@ -211,29 +208,29 @@ public class NFServer implements Runnable {
 		                    response.writeMessageToOutputStream(dos);
 		                } 
 		                else if (msg.getOpcode() == PeerMessageOps.OPCODE_DOWNLOAD_FILE) {
-		                    // 1. Obtener el hash que nos pide el cliente
+		                    // 1. Obtenemos el hash que nos pide el cliente
 		                    String hash = msg.getFileHash();
-		                    // 2. Buscar la ruta del fichero en nuestra base de datos local
+		                    // 2. Buscamos la ruta del fichero 
 		                    String filePath = es.um.redes.nanoFiles.application.NanoFiles.db.lookupFilePath(hash);
 		                    
 		                    if (filePath != null) {
 		                        java.io.File file = new java.io.File(filePath);
-		                        // 3. Confirmar al cliente que el fichero existe enviando FILE_CHUNK
+		                        // 3. Confirmamos al cliente que el fichero existe enviando FILE_CHUNK
 		                        PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_FILE_CHUNK);
 		                        response.setFileName(file.getName()); // El nombre real del archivo
 		                        response.writeMessageToOutputStream(dos);
 		                        
-		                        // 4. Enviar el tamaño (long) para que el cliente sepa cuánto leer
+		                        // 4. Enviamos el tamaño  para que el cliente sepa cuánto leer
 		                        dos.writeLong(file.length());
 		                        
-		                        // 5. Enviar el contenido del fichero en bloques
+		                        // 5. Enviamos el contenido del fichero en bloques
 		                        try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
 		                            byte[] buffer = new byte[8192];
 		                            int bytesRead;
 		                            while ((bytesRead = fis.read(buffer)) != -1) {
 		                                dos.write(buffer, 0, bytesRead);
 		                            }
-		                            dos.flush(); // Asegurar que todo se envía
+		                            dos.flush(); // Aseguramos que todo se envíaa
 		                        }
 		                    } else {
 		                        // Si no lo encontramos, enviamos error
