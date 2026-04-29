@@ -208,38 +208,54 @@ public class NFServer implements Runnable {
 		                    response.writeMessageToOutputStream(dos);
 		                } 
 		                else if (msg.getOpcode() == PeerMessageOps.OPCODE_DOWNLOAD_FILE) {
-		                    // 1. Obtenemos el hash que nos pide el cliente
-		                    String hash = msg.getFileHash();
-		                    // 2. Buscamos la ruta del fichero 
-		                    String filePath = es.um.redes.nanoFiles.application.NanoFiles.db.lookupFilePath(hash);
+		                    // 1. Obtenemos la subcadena de hash que nos pide el cliente
+		                    String hashSubstring = msg.getFileHash();
 		                    
-		                    if (filePath != null) {
-		                        java.io.File file = new java.io.File(filePath);
-		                        // 3. Confirmamos al cliente que el fichero existe enviando FILE_CHUNK
-		                        PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_FILE_CHUNK);
-		                        response.setFileName(file.getName()); // El nombre real del archivo
-		                        response.writeMessageToOutputStream(dos);
-		                        
-		                        // 4. Enviamos el tamaño  para que el cliente sepa cuánto leer
-		                        dos.writeLong(file.length());
-		                        
-		                        // 5. Enviamos el contenido del fichero en bloques
-		                        try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
-		                            byte[] buffer = new byte[8192];
-		                            int bytesRead;
-		                            while ((bytesRead = fis.read(buffer)) != -1) {
-		                                dos.write(buffer, 0, bytesRead);
-		                            }
-		                            dos.flush(); // Aseguramos que todo se envíaa
-		                        }
-		                    } else {
-		                        // Si no lo encontramos, enviamos error
+		                    // 2. Buscamos entre todos nuestros ficheros compartidos
+		                    FileInfo[] myFiles = es.um.redes.nanoFiles.application.NanoFiles.db.getFiles();
+		                    FileInfo[] matches = FileInfo.lookupHashSubstring(myFiles, hashSubstring);
+		                    
+		                    if (matches.length == 0) {
+		                        // Error: No coincide con ningún fichero
+		                        System.err.println("✗ No file matches hash substring: " + hashSubstring);
 		                        PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_FILE_NOT_FOUND);
 		                        response.writeMessageToOutputStream(dos);
+		                    } else if (matches.length > 1) {
+		                        // Error: Ambiguo, hay múltiples coincidencias
+		                        System.err.println("✗ Ambiguous hash substring: " + hashSubstring + " matches " + matches.length + " files");
+		                        PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_FILE_NOT_FOUND);
+		                        response.writeMessageToOutputStream(dos);
+		                    } else {
+		                        // Exactamente una coincidencia, servir el fichero
+		                        FileInfo fileInfo = matches[0];
+		                        java.io.File file = new java.io.File(fileInfo.filePath);
+		                        
+		                        if (file.exists()) {
+		                            // 3. Confirmamos al cliente que el fichero existe
+		                            PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_FILE_CHUNK);
+		                            response.setFileName(file.getName());
+		                            response.writeMessageToOutputStream(dos);
+		                            
+		                            // 4. Enviamos el tamaño
+		                            dos.writeLong(file.length());
+		                            
+		                            // 5. Enviamos el contenido del fichero
+		                            try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
+		                                byte[] buffer = new byte[8192];
+		                                int bytesRead;
+		                                while ((bytesRead = fis.read(buffer)) != -1) {
+		                                    dos.write(buffer, 0, bytesRead);
+		                                }
+		                                dos.flush();
+		                            }
+		                        } else {
+		                            PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_FILE_NOT_FOUND);
+		                            response.writeMessageToOutputStream(dos);
 		                    }
 		                }
 		                
-		            } catch (java.io.EOFException e) {
+		               }
+		               }catch (java.io.EOFException e) {
 		                break; 
 		            }
 		        }

@@ -18,7 +18,7 @@ public class PeerMessageOps {
 	public static final byte OPCODE_DOWNLOAD_FILE = 3;  // Cliente pide un fichero (por hash)
 	public static final byte OPCODE_FILE_NOT_FOUND = 4; // Servidor dice que no tiene el fichero.
 	public static final byte OPCODE_FILE_CHUNK = 5;     // Servidor envia un trozo del fichero
-
+	public static final byte OPCODE_FILE_AMBIGUOUS = 7;
 
 	/*
 	 * TODO: (Boletín MensajesBinarios) Definir constantes con nuevos opcodes de
@@ -31,7 +31,8 @@ public class PeerMessageOps {
 			OPCODE_FILE_LIST,
 			OPCODE_DOWNLOAD_FILE,
 			OPCODE_FILE_NOT_FOUND,
-			OPCODE_FILE_CHUNK
+			OPCODE_FILE_CHUNK,
+			OPCODE_FILE_AMBIGUOUS
 		};
 
 		
@@ -41,7 +42,8 @@ public class PeerMessageOps {
 			"FILE_LIST",
 			"DOWNLOAD_FILE",
 			"FILE_NOT_FOUND",
-			"FILE_CHUNK"
+			"FILE_CHUNK",
+			"FILE_AMBIGUOUS"
 		};
 
 	private static Map<String, Byte> _operation_to_opcode;

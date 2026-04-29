@@ -94,6 +94,9 @@ public class PeerMessage {
 			case PeerMessageOps.OPCODE_FILE_CHUNK: // Servidor envía info previa a loos bytes
 				message.setFileName(dis.readUTF());
 				break;
+			case PeerMessageOps.OPCODE_FILE_AMBIGUOUS:
+			    // no campos extra
+			    break;
 		}
 		return message;
 	}
@@ -123,6 +126,9 @@ public class PeerMessage {
 			case PeerMessageOps.OPCODE_FILE_CHUNK:
 				dos.writeUTF(fileName);
 				break;
+			case PeerMessageOps.OPCODE_FILE_AMBIGUOUS:
+			    // (mensaje “vacío”)
+			    break;
 		}
 	
 	}
