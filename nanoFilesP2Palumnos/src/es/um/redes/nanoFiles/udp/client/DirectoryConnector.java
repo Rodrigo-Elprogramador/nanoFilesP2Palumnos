@@ -8,6 +8,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.util.Map;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import es.um.redes.nanoFiles.tcp.client.NFConnector;
 
@@ -15,6 +16,10 @@ import es.um.redes.nanoFiles.application.NanoFiles;
 import es.um.redes.nanoFiles.udp.message.DirMessage;
 import es.um.redes.nanoFiles.udp.message.DirMessageOps;
 import es.um.redes.nanoFiles.util.FileInfo;
+//Implem,entacion del profesor sobre las ips
+import java.net.Inet4Address;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 
 /**
  * Cliente con métodos de consulta y actualización específicos del directorio
@@ -525,6 +530,29 @@ public class DirectoryConnector {
 		boolean success = false;
 
 		return success;
+	}
+	
+	//IMPLEMENTACION DEL PROFESOR
+	private String getActiveAddress() {
+	    String activeAddress = null;
+	    try {
+	        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+	        while (interfaces.hasMoreElements()) {
+	            NetworkInterface networkInterface = interfaces.nextElement();
+	            if (!networkInterface.isUp() || networkInterface.isLoopback() || networkInterface.isVirtual())
+	                continue;
+	            Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
+	            while (addresses.hasMoreElements()) {
+	                InetAddress address = addresses.nextElement();
+	                if (!address.isLoopbackAddress() && address instanceof Inet4Address) {
+	                    activeAddress = new String(address.getHostAddress());
+	                }
+	            }
+	        }
+	    } catch (SocketException e) {
+	        e.printStackTrace();
+	    }
+	    return activeAddress;
 	}
 
 }
